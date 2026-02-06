@@ -66,7 +66,7 @@ VITE_API_URL=http://localhost:3001
 ### 3) DAO Contracts
 
 ```bash
-cd /Users/fabiomaulana/sad-StacksAIDAO/dao-factory
+cd **/sad-StacksAIDAO/dao-factory
 npm install
 npm test
 ```
