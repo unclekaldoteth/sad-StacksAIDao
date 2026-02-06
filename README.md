@@ -41,7 +41,7 @@ flowchart LR
 ### 1) Backend
 
 ```bash
-cd /Users/fabiomaulana/sad-StacksAIDAO/backend
+cd **/sad-StacksAIDAO/backend
 cp .env.example .env
 npm install
 npm run dev
@@ -52,7 +52,7 @@ Backend runs on `http://localhost:3001` by default.
 ### 2) Frontend
 
 ```bash
-cd /Users/fabiomaulana/sad-StacksAIDAO/frontend
+cd **/sad-StacksAIDAO/frontend
 npm install
 npm run dev
 ```
@@ -73,8 +73,8 @@ npm test
 
 ## Test Commands
 
-- Backend: `cd /Users/fabiomaulana/sad-StacksAIDAO/backend && npm test`
-- DAO contracts: `cd /Users/fabiomaulana/sad-StacksAIDAO/dao-factory && npm test`
+- Backend: `cd **/sad-StacksAIDAO/backend && npm test`
+- DAO contracts: `cd **/sad-StacksAIDAO/dao-factory && npm test`
 - Frontend: no test suite configured yet
 
 ## Useful Docs
