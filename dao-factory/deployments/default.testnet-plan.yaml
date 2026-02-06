@@ -1,0 +1,102 @@
+---
+id: 0
+name: Testnet deployment
+network: testnet
+stacks-node: "https://api.testnet.hiro.so"
+bitcoin-node: "http://blockstack:blockstacksystem@bitcoind.testnet.stacks.co:18332"
+plan:
+  batches:
+    - id: 0
+      transactions:
+        - contract-publish:
+            contract-name: dao-traits
+            expected-sender: ST1ZGGS886YCZHMFXJR1EK61ZP34FNWNSX28M1PMM
+            cost: 12030
+            path: contracts/dao-traits.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: dao-core
+            expected-sender: ST1ZGGS886YCZHMFXJR1EK61ZP34FNWNSX28M1PMM
+            cost: 43030
+            path: contracts/dao-core.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: dao-factory
+            expected-sender: ST1ZGGS886YCZHMFXJR1EK61ZP34FNWNSX28M1PMM
+            cost: 29410
+            path: contracts/dao-factory.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: extensions-registry
+            expected-sender: ST1ZGGS886YCZHMFXJR1EK61ZP34FNWNSX28M1PMM
+            cost: 56320
+            path: contracts/extensions-registry.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: governance-token
+            expected-sender: ST1ZGGS886YCZHMFXJR1EK61ZP34FNWNSX28M1PMM
+            cost: 48420
+            path: contracts/governance-token.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: membership
+            expected-sender: ST1ZGGS886YCZHMFXJR1EK61ZP34FNWNSX28M1PMM
+            cost: 44120
+            path: contracts/membership.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: mock-proposal
+            expected-sender: ST1ZGGS886YCZHMFXJR1EK61ZP34FNWNSX28M1PMM
+            cost: 4140
+            path: contracts/mock-proposal.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: proposal-submission
+            expected-sender: ST1ZGGS886YCZHMFXJR1EK61ZP34FNWNSX28M1PMM
+            cost: 62760
+            path: contracts/proposal-submission.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: proposal-voting
+            expected-sender: ST1ZGGS886YCZHMFXJR1EK61ZP34FNWNSX28M1PMM
+            cost: 57760
+            path: contracts/proposal-voting.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: template-registry
+            expected-sender: ST1ZGGS886YCZHMFXJR1EK61ZP34FNWNSX28M1PMM
+            cost: 38760
+            path: contracts/template-registry.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: test-executor
+            expected-sender: ST1ZGGS886YCZHMFXJR1EK61ZP34FNWNSX28M1PMM
+            cost: 2800
+            path: contracts/test-executor.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: treasury
+            expected-sender: ST1ZGGS886YCZHMFXJR1EK61ZP34FNWNSX28M1PMM
+            cost: 45910
+            path: contracts/treasury.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: treasury-actions
+            expected-sender: ST1ZGGS886YCZHMFXJR1EK61ZP34FNWNSX28M1PMM
+            cost: 55960
+            path: contracts/treasury-actions.clar
+            anchor-block-only: true
+            clarity-version: 3
+      epoch: "3.0"
