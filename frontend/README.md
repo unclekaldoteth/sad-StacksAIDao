@@ -26,6 +26,12 @@ Select Stacks network:
 VITE_STACKS_NETWORK=testnet
 ```
 
+Optional: enable WalletConnect (for mobile wallets):
+
+```
+VITE_WALLETCONNECT_PROJECT_ID=your_project_id
+```
+
 ## Build
 
 ```bash

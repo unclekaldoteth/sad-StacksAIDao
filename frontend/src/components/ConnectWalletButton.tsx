@@ -8,30 +8,30 @@ export function ConnectWalletButton() {
         return `${address.slice(0, 6)}...${address.slice(-4)}`;
     };
 
-    if (isConnected && userAddress) {
-        return (
-            <div className="wallet-connected">
-                <div className="wallet-info">
-                    <span className="wallet-indicator"></span>
-                    <span className="wallet-address">{formatAddress(userAddress)}</span>
-                </div>
-                <button className="btn btn-secondary btn-sm" onClick={disconnect}>
-                    Disconnect
-                </button>
-            </div>
-        );
-    }
+    const handleClick = () => {
+        if (isConnected) {
+            void disconnect();
+        } else {
+            void connect();
+        }
+    };
 
     return (
         <button
-            className="btn btn-primary connect-wallet-btn"
-            onClick={connect}
+            className={`btn connect-wallet-btn ${isConnected ? 'connected' : 'btn-primary'}`}
+            onClick={handleClick}
             disabled={isConnecting}
+            title={isConnected ? 'Click to disconnect' : 'Connect your Stacks wallet'}
         >
             {isConnecting ? (
                 <>
                     <span className="loader loader-sm"></span>
                     Connecting...
+                </>
+            ) : isConnected && userAddress ? (
+                <>
+                    <span className="wallet-indicator"></span>
+                    {formatAddress(userAddress)}
                 </>
             ) : (
                 <>

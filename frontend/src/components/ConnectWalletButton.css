@@ -2,26 +2,32 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.connect-wallet-btn:hover {
+    transform: translateY(-1px);
 }
 
 .wallet-icon {
     font-size: 1.1rem;
 }
 
-.wallet-connected {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+/* Connected state */
+.connect-wallet-btn.connected {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--success);
+    color: var(--text-primary);
 }
 
-.wallet-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    background: var(--bg-tertiary);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-color);
+.connect-wallet-btn.connected:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: var(--error);
+}
+
+.connect-wallet-btn.connected:hover .wallet-indicator {
+    background: var(--error);
+    box-shadow: 0 0 8px var(--error);
 }
 
 .wallet-indicator {
@@ -29,10 +35,11 @@
     height: 8px;
     background: var(--success);
     border-radius: 50%;
-    animation: pulse 2s infinite;
+    box-shadow: 0 0 8px var(--success);
+    animation: wallet-pulse 2s infinite;
 }
 
-@keyframes pulse {
+@keyframes wallet-pulse {
 
     0%,
     100% {
@@ -40,14 +47,8 @@
     }
 
     50% {
-        opacity: 0.5;
+        opacity: 0.6;
     }
-}
-
-.wallet-address {
-    font-family: 'SF Mono', 'Monaco', monospace;
-    font-size: 0.85rem;
-    color: var(--text-primary);
 }
 
 .btn-sm {

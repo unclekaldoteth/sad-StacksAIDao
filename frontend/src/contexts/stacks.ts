@@ -1,27 +1,13 @@
-import { AppConfig, UserSession } from '@stacks/connect';
 import { STACKS_MAINNET, STACKS_TESTNET, type StacksNetwork } from '@stacks/network';
 
-const appConfig = new AppConfig(['store_write', 'publish_data']);
+const rawNetwork = String(import.meta.env.VITE_STACKS_NETWORK || '').toLowerCase();
 
-export const userSession = new UserSession({ appConfig });
-
-export const isMainnet = import.meta.env.VITE_STACKS_NETWORK === 'mainnet';
-export const network: StacksNetwork = isMainnet ? STACKS_MAINNET : STACKS_TESTNET;
-
-export type StacksUserData = {
-    profile?: {
-        stxAddress?: {
-            testnet?: string;
-            mainnet?: string;
-        };
-    };
-};
-
-export function getUserAddress(data: StacksUserData): string | null {
-    const address = isMainnet
-        ? data.profile?.stxAddress?.mainnet
-        : data.profile?.stxAddress?.testnet;
-
-    return address ?? null;
+if (rawNetwork && rawNetwork !== 'mainnet' && rawNetwork !== 'testnet') {
+    // Keep behavior predictable if env is misconfigured.
+    console.warn(`[wallet] Unknown VITE_STACKS_NETWORK="${rawNetwork}", defaulting to "testnet"`);
 }
 
+export const stacksNetworkName: 'mainnet' | 'testnet' =
+    rawNetwork === 'mainnet' ? 'mainnet' : 'testnet';
+export const isMainnet = stacksNetworkName === 'mainnet';
+export const network: StacksNetwork = isMainnet ? STACKS_MAINNET : STACKS_TESTNET;
