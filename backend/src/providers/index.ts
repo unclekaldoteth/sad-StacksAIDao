@@ -7,6 +7,7 @@ import type { LLMProvider, LLMProviderType } from '../types/llm.js';
 import { OllamaProvider } from './ollama.js';
 import { OpenAIProvider } from './openai.js';
 import { AnthropicProvider } from './anthropic.js';
+import { GeminiProvider } from './gemini.js';
 import { config } from '../config/index.js';
 
 export class ProviderFactory {
@@ -76,6 +77,16 @@ export class ProviderFactory {
                 );
                 break;
 
+            case 'gemini':
+                if (!config.llm.gemini.apiKey) {
+                    throw new Error('Gemini API key not configured');
+                }
+                this.instance = new GeminiProvider(
+                    config.llm.gemini.apiKey,
+                    config.llm.gemini.model
+                );
+                break;
+
             default:
                 throw new Error(`Unknown LLM provider: ${providerType}`);
         }
@@ -107,3 +118,8 @@ export class ProviderFactory {
 export function getLLMProvider(): LLMProvider {
     return ProviderFactory.getProvider();
 }
+
+export { OpenAIProvider } from './openai.js';
+export { OllamaProvider } from './ollama.js';
+export { AnthropicProvider } from './anthropic.js';
+export { GeminiProvider } from './gemini.js';

@@ -3,7 +3,7 @@
  * Supports multiple LLM backends with a unified interface
  */
 
-export type LLMProviderType = 'ollama' | 'openai' | 'anthropic' | 'together' | 'groq';
+export type LLMProviderType = 'ollama' | 'openai' | 'anthropic' | 'together' | 'groq' | 'gemini';
 
 export interface LLMMessage {
     role: 'system' | 'user' | 'assistant';
@@ -81,6 +81,10 @@ export interface ProviderConfig {
         model: string;
     };
     groq?: {
+        apiKey: string;
+        model: string;
+    };
+    gemini?: {
         apiKey: string;
         model: string;
     };

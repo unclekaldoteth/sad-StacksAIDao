@@ -30,12 +30,22 @@ export interface TreasuryInsight {
     recommendations: string[];
 }
 
+export type AgentActionType =
+    | 'propose'
+    | 'vote'
+    | 'execute'
+    | 'notify'
+    | 'spend'
+    | 'upgrade'
+    // Allow additional action types without weakening autocomplete for known ones.
+    | (string & {});
+
 export interface AgentAction {
-    type: 'propose' | 'vote' | 'execute' | 'notify';
+    type: AgentActionType;
     requiresApproval: boolean;
     riskLevel: 'low' | 'medium' | 'high';
     description: string;
-    data: unknown;
+    data?: unknown;
 }
 
 export interface AgentContext {

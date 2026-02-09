@@ -32,6 +32,7 @@ Configure `LLM_PROVIDER` in `.env`:
 | `anthropic` | ❌ | Yes |
 | `together` | ❌ | Yes |
 | `groq` | ❌ | Yes |
+| `gemini` | ❌ | Yes |
 
 ## API Endpoints
 

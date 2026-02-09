@@ -27,7 +27,7 @@ This repository contains three coordinated packages:
 flowchart LR
   U["DAO Member"] --> F["frontend (React + Vite)"]
   F -->|"REST: /api/*"| B["backend (Express + DAO Agent)"]
-  B -->|"LLM completion/stream"| P["LLM Provider (Ollama/OpenAI/Anthropic/Together/Groq)"]
+  B -->|"LLM completion/stream"| P["LLM Provider (Ollama/OpenAI/Anthropic/Together/Groq/Gemini)"]
   B -->|"DAO context (daoAddress, proposal/treasury payloads)"| C["dao-factory (Clarity contracts)"]
 ```
 
@@ -41,7 +41,7 @@ flowchart LR
 ### 1) Backend
 
 ```bash
-cd **/sad-StacksAIDAO/backend
+cd backend
 cp .env.example .env
 npm install
 npm run dev
@@ -52,7 +52,7 @@ Backend runs on `http://localhost:3001` by default.
 ### 2) Frontend
 
 ```bash
-cd **/sad-StacksAIDAO/frontend
+cd frontend
 npm install
 npm run dev
 ```
@@ -66,15 +66,17 @@ VITE_API_URL=http://localhost:3001
 ### 3) DAO Contracts
 
 ```bash
-cd **/sad-StacksAIDAO/dao-factory
+cd dao-factory
 npm install
 npm test
 ```
 
+Note: `dao-factory/settings/Mainnet.toml` and `dao-factory/settings/Testnet.toml` are gitignored because they may contain mnemonics. Use `dao-factory/settings/Mainnet.toml.example` and `dao-factory/settings/Testnet.toml.example` as templates.
+
 ## Test Commands
 
-- Backend: `cd **/sad-StacksAIDAO/backend && npm test`
-- DAO contracts: `cd **/sad-StacksAIDAO/dao-factory && npm test`
+- Backend: `cd backend && npm test`
+- DAO contracts: `cd dao-factory && npm test`
 - Frontend: no test suite configured yet
 
 ## Useful Docs

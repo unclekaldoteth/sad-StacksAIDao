@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { OpenAIProvider } from '../src/providers/openai.js';
 import { OllamaProvider } from '../src/providers/ollama.js';
 import { AnthropicProvider } from '../src/providers/anthropic.js';
+import { GeminiProvider } from '../src/providers/gemini.js';
 
 function createTextStream(chunks: string[]): ReadableStream<Uint8Array> {
     const encoder = new TextEncoder();
@@ -115,5 +116,61 @@ describe('AnthropicProvider', () => {
         expect(requestInit).toBeDefined();
         const body = JSON.parse(String(requestInit.body));
         expect(body.temperature).toBe(0.12);
+    });
+});
+
+describe('GeminiProvider', () => {
+    it('prepends system prompt to the first user message', async () => {
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                candidates: [{ content: { parts: [{ text: 'ok' }] } }],
+                usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
+            }),
+        } as unknown as Response);
+        vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
+
+        const provider = new GeminiProvider('test-key', 'gemini-1.5-flash');
+        await provider.complete({
+            messages: [
+                { role: 'system', content: 'SYS' },
+                { role: 'user', content: 'Hello' },
+            ],
+        });
+
+        const requestInit = fetchMock.mock.calls[0]?.[1] as RequestInit;
+        expect(requestInit).toBeDefined();
+        const body = JSON.parse(String(requestInit.body));
+        expect(body.contents[0].role).toBe('user');
+        expect(body.contents[0].parts[0].text).toBe('SYS\n\nHello');
+    });
+
+    it('streams correctly when chunks split SSE lines', async () => {
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            statusText: 'OK',
+            body: createTextStream([
+                'data: {"candidates":[{"content":{"parts":[{"text":"Hel',
+                'lo"}]}}]}\n',
+                'data: {"candidates":[{"content":{"parts":[{"text":" world"}]}}]}\n',
+            ]),
+        } as unknown as Response);
+        vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
+
+        const provider = new GeminiProvider('test-key', 'gemini-1.5-flash');
+        const seenChunks: string[] = [];
+        let sawDone = false;
+
+        for await (const chunk of provider.stream!({
+            messages: [{ role: 'user', content: 'Hello?' }],
+        })) {
+            seenChunks.push(chunk.content);
+            if (chunk.done) {
+                sawDone = true;
+            }
+        }
+
+        expect(seenChunks.join('')).toBe('Hello world');
+        expect(sawDone).toBe(true);
     });
 });

@@ -42,6 +42,11 @@ export const config = {
             apiKey: process.env.GROQ_API_KEY ?? '',
             model: process.env.GROQ_MODEL ?? 'llama3-70b-8192',
         },
+
+        gemini: {
+            apiKey: process.env.GEMINI_API_KEY ?? '',
+            model: process.env.GEMINI_MODEL ?? 'gemini-1.5-flash',
+        },
     },
 
     // Stacks Configuration
