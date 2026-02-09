@@ -1,5 +1,4 @@
 import {
-    cvToJSON,
     principalCV,
     uintCV,
     type ClarityValue,
@@ -7,6 +6,7 @@ import {
 import { config } from '../config/index.js';
 import { buildDaoContracts, type DaoContracts } from './dao-contracts.js';
 import {
+    expectPrincipalString,
     expectString,
     expectTuple,
     expectUintString,
@@ -112,6 +112,8 @@ export function getDaoConfig(): DaoConfigResponse {
     };
 }
 
+export type DaoReadOnlyContext = Pick<DaoConfigResponse, 'stacksApiUrl' | 'deployerAddress' | 'contracts'>;
+
 function mapProposalStatus(statusUint: string): DaoProposalStatus {
     switch (statusUint) {
         case '1':
@@ -130,26 +132,28 @@ function mapProposalStatus(statusUint: string): DaoProposalStatus {
 }
 
 async function callDaoReadOnly(
+    ctx: DaoReadOnlyContext,
     contractId: string,
     functionName: string,
     args?: ClarityValue[]
 ): Promise<ClarityValue> {
-    const deployerAddress = requireDeployerAddress();
     return callReadOnlyFunction({
         contractId,
         functionName,
-        senderAddress: deployerAddress,
+        senderAddress: ctx.deployerAddress,
         args,
+        apiUrl: ctx.stacksApiUrl,
     });
 }
 
 async function fetchDaoProposalByIdWithContracts(
-    contracts: DaoContracts,
+    ctx: DaoReadOnlyContext,
     id: bigint
 ): Promise<DaoProposal | null> {
+    const contracts = ctx.contracts;
     const [proposalOptCv, votesCv] = await Promise.all([
-        callDaoReadOnly(contracts.proposals, 'get-proposal', [uintCV(id)]),
-        callDaoReadOnly(contracts.voting, 'get-proposal-votes', [uintCV(id)]),
+        callDaoReadOnly(ctx, contracts.proposals, 'get-proposal', [uintCV(id)]),
+        callDaoReadOnly(ctx, contracts.voting, 'get-proposal-votes', [uintCV(id)]),
     ]);
 
     const proposalCv = unwrapOptional(proposalOptCv);
@@ -183,15 +187,16 @@ async function fetchDaoProposalByIdWithContracts(
     } satisfies DaoProposal;
 }
 
-export async function fetchDaoOverview(): Promise<DaoOverviewResponse> {
-    const { contracts } = getDaoConfig();
+export async function fetchDaoOverview(ctx?: DaoReadOnlyContext): Promise<DaoOverviewResponse> {
+    const dao = ctx ?? getDaoConfig();
+    const { contracts } = dao;
 
     const [nameCv, descriptionCv, membersCv, proposalsCv, treasuryCv] = await Promise.all([
-        callDaoReadOnly(contracts.core, 'get-dao-name'),
-        callDaoReadOnly(contracts.core, 'get-dao-description'),
-        callDaoReadOnly(contracts.membership, 'get-member-count'),
-        callDaoReadOnly(contracts.proposals, 'get-proposal-count'),
-        callDaoReadOnly(contracts.treasury, 'get-treasury-stats'),
+        callDaoReadOnly(dao, contracts.core, 'get-dao-name'),
+        callDaoReadOnly(dao, contracts.core, 'get-dao-description'),
+        callDaoReadOnly(dao, contracts.membership, 'get-member-count'),
+        callDaoReadOnly(dao, contracts.proposals, 'get-proposal-count'),
+        callDaoReadOnly(dao, contracts.treasury, 'get-treasury-stats'),
     ]);
 
     const treasury = expectTuple(treasuryCv);
@@ -216,9 +221,11 @@ export async function fetchDaoOverview(): Promise<DaoOverviewResponse> {
 
 export async function fetchDaoProposals(opts?: {
     limit?: number;
+    ctx?: DaoReadOnlyContext;
 }): Promise<{ proposals: DaoProposal[] }> {
-    const { contracts } = getDaoConfig();
-    const proposalCountCv = await callDaoReadOnly(contracts.proposals, 'get-proposal-count');
+    const dao = opts?.ctx ?? getDaoConfig();
+    const { contracts } = dao;
+    const proposalCountCv = await callDaoReadOnly(dao, contracts.proposals, 'get-proposal-count');
     const proposalCount = BigInt(expectUintString(proposalCountCv));
 
     const ids: bigint[] = [];
@@ -230,30 +237,24 @@ export async function fetchDaoProposals(opts?: {
 
     // Fetch proposals (and votes) in parallel. For large DAOs we should add concurrency limits.
     const results = await Promise.all(
-        ids.map((id) => fetchDaoProposalByIdWithContracts(contracts, id))
+        ids.map((id) => fetchDaoProposalByIdWithContracts(dao, id))
     );
 
     return { proposals: results.filter((p): p is DaoProposal => Boolean(p)) };
 }
 
-function expectPrincipalString(cv: ClarityValue): string {
-    const json = cvToJSON(cv) as unknown as { type?: string; value?: unknown };
-    if (typeof json?.value === 'string') {
-        return json.value;
-    }
-    throw new Error(`Expected principal, got: ${JSON.stringify(json)}`);
-}
-
-export async function fetchDaoProposalById(id: bigint): Promise<DaoProposal | null> {
-    const { contracts } = getDaoConfig();
-    return fetchDaoProposalByIdWithContracts(contracts, id);
+export async function fetchDaoProposalById(id: bigint, ctx?: DaoReadOnlyContext): Promise<DaoProposal | null> {
+    const dao = ctx ?? getDaoConfig();
+    return fetchDaoProposalByIdWithContracts(dao, id);
 }
 
 export async function fetchDaoTreasury(opts?: {
     recentSpendsLimit?: number;
+    ctx?: DaoReadOnlyContext;
 }): Promise<DaoTreasuryResponse> {
-    const { contracts } = getDaoConfig();
-    const treasuryStatsCv = await callDaoReadOnly(contracts.treasury, 'get-treasury-stats');
+    const dao = opts?.ctx ?? getDaoConfig();
+    const { contracts } = dao;
+    const treasuryStatsCv = await callDaoReadOnly(dao, contracts.treasury, 'get-treasury-stats');
     const stats = expectTuple(treasuryStatsCv);
 
     const spendCount = BigInt(expectUintString(stats['spend-count']));
@@ -271,7 +272,7 @@ export async function fetchDaoTreasury(opts?: {
             .slice()
             .reverse()
             .map(async (spendId) => {
-                const spendOptCv = await callDaoReadOnly(contracts.treasury, 'get-spend-history', [
+                const spendOptCv = await callDaoReadOnly(dao, contracts.treasury, 'get-spend-history', [
                     uintCV(spendId),
                 ]);
                 const spendCv = unwrapOptional(spendOptCv);
@@ -306,12 +307,13 @@ export async function fetchDaoTreasury(opts?: {
     };
 }
 
-export async function fetchVotingPower(address: string): Promise<DaoVotingPowerResponse> {
-    const { contracts } = getDaoConfig();
+export async function fetchVotingPower(address: string, ctx?: DaoReadOnlyContext): Promise<DaoVotingPowerResponse> {
+    const dao = ctx ?? getDaoConfig();
+    const { contracts } = dao;
 
     const [powerCv, totalCv] = await Promise.all([
-        callDaoReadOnly(contracts.membership, 'get-voting-power', [principalCV(address)]),
-        callDaoReadOnly(contracts.membership, 'get-total-voting-power', []),
+        callDaoReadOnly(dao, contracts.membership, 'get-voting-power', [principalCV(address)]),
+        callDaoReadOnly(dao, contracts.membership, 'get-total-voting-power', []),
     ]);
 
     const power = unwrapResponseOk(powerCv);

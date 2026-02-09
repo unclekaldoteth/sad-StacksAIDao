@@ -7,6 +7,34 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import express, { type Express } from 'express';
 import { apiRouter } from '../src/api/routes.js';
 
+// Mock DAO registry (multi-DAO support)
+vi.mock('../src/dao-registry/index.js', () => ({
+    listDaos: vi.fn(async () => ({
+        factoryContractId: 'ST1TEST.dao-factory',
+        defaultDaoId: '1',
+        daos: [],
+    })),
+    resolveDaoContext: vi.fn(async () => ({
+        network: 'testnet',
+        stacksApiUrl: 'http://mock',
+        deployerAddress: 'ST1TEST',
+        contracts: {
+            core: 'ST1TEST.dao-core',
+            proposals: 'ST1TEST.proposal-submission',
+            voting: 'ST1TEST.proposal-voting',
+            treasury: 'ST1TEST.treasury',
+            treasuryActions: 'ST1TEST.treasury-actions',
+            governanceToken: 'ST1TEST.governance-token',
+            membership: 'ST1TEST.membership',
+            extensionsRegistry: 'ST1TEST.extensions-registry',
+            templateRegistry: 'ST1TEST.template-registry',
+            factory: 'ST1TEST.dao-factory',
+        },
+        daoId: '1',
+        name: 'Test DAO',
+    })),
+}));
+
 // Mock on-chain reads (DAO state)
 vi.mock('../src/stacks/dao-state.js', () => ({
     fetchDaoOverview: vi.fn(async () => ({
@@ -82,23 +110,6 @@ vi.mock('../src/stacks/dao-state.js', () => ({
         address,
         votingPower: '0',
         totalVotingPower: '0',
-    })),
-    getDaoConfig: vi.fn(() => ({
-        network: 'testnet',
-        stacksApiUrl: 'http://mock',
-        deployerAddress: 'ST1TEST',
-        contracts: {
-            core: 'ST1TEST.dao-core',
-            proposals: 'ST1TEST.proposal-submission',
-            voting: 'ST1TEST.proposal-voting',
-            treasury: 'ST1TEST.treasury',
-            treasuryActions: 'ST1TEST.treasury-actions',
-            governanceToken: 'ST1TEST.governance-token',
-            membership: 'ST1TEST.membership',
-            extensionsRegistry: 'ST1TEST.extensions-registry',
-            templateRegistry: 'ST1TEST.template-registry',
-            factory: 'ST1TEST.factory',
-        },
     })),
 }));
 
@@ -224,6 +235,20 @@ describe('API Routes', () => {
             expect(res.body.name).toBe('mock');
             expect(res.body.model).toBe('mock-model');
             expect(res.body.available).toBe(true);
+        });
+    });
+
+    // ==========================================
+    // DAO Registry
+    // ==========================================
+
+    describe('GET /api/daos', () => {
+        it('returns DAO registry payload', async () => {
+            const res = await request(app, 'GET', '/api/daos');
+
+            expect(res.status).toBe(200);
+            expect(res.body).toBeDefined();
+            expect(res.body.daos).toBeInstanceOf(Array);
         });
     });
 

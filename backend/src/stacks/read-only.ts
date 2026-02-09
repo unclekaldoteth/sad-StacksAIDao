@@ -30,9 +30,11 @@ export async function callReadOnlyFunction(opts: {
     functionName: string;
     senderAddress: string;
     args?: ClarityValue[];
+    apiUrl?: string;
 }): Promise<ClarityValue> {
     const { contractAddress, contractName } = splitContractId(opts.contractId);
-    const url = `${config.stacks.apiUrl}/v2/contracts/call-read/${contractAddress}/${contractName}/${opts.functionName}`;
+    const apiUrl = opts.apiUrl ?? config.stacks.apiUrl;
+    const url = `${apiUrl}/v2/contracts/call-read/${contractAddress}/${contractName}/${opts.functionName}`;
 
     const body = {
         sender: opts.senderAddress,
@@ -69,4 +71,3 @@ export async function callReadOnlyFunction(opts: {
 
     return hexToCV(json.result);
 }
-

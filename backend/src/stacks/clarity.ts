@@ -55,6 +55,16 @@ export function expectString(cv: ClarityValue): string {
     throw new Error(`Expected string, got: ${JSON.stringify(cvToJSON(cv))}`);
 }
 
+export function expectPrincipalString(cv: ClarityValue): string {
+    if (isClarityType(cv, ClarityType.PrincipalStandard) || isClarityType(cv, ClarityType.PrincipalContract)) {
+        const json = cvToJSON(cv) as unknown as { value?: unknown };
+        if (typeof json?.value === 'string') {
+            return json.value;
+        }
+    }
+    throw new Error(`Expected principal, got: ${JSON.stringify(cvToJSON(cv))}`);
+}
+
 export function cvToPlain(cv: ClarityValue): PlainValue {
     switch (cv.type) {
         case ClarityType.BoolTrue:

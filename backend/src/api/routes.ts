@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import { DAOAgent } from '../agents/dao-agent.js';
 import { computeDaoAlerts } from '../agents/risk-scanner.js';
+import { listDaos, resolveDaoContext } from '../dao-registry/index.js';
 import { getLLMProvider, ProviderFactory } from '../providers/index.js';
 import { config } from '../config/index.js';
 import {
@@ -14,7 +15,6 @@ import {
     fetchDaoProposalById,
     fetchDaoTreasury,
     fetchVotingPower,
-    getDaoConfig,
 } from '../stacks/dao-state.js';
 import { z } from 'zod';
 
@@ -22,6 +22,7 @@ const router = Router();
 
 const analyzeProposalSchema = z.object({
     daoAddress: z.string().min(1),
+    daoId: z.string().min(1).optional(),
     proposal: z.object({
         id: z.number().int().nonnegative(),
         title: z.string().min(1),
@@ -33,6 +34,7 @@ const analyzeProposalSchema = z.object({
 
 const votingRecommendationSchema = z.object({
     daoAddress: z.string().min(1),
+    daoId: z.string().min(1).optional(),
     proposal: z.object({
         id: z.number().int().nonnegative(),
         title: z.string().min(1),
@@ -46,6 +48,7 @@ const votingRecommendationSchema = z.object({
 
 const analyzeTreasurySchema = z.object({
     daoAddress: z.string().min(1),
+    daoId: z.string().min(1).optional(),
     treasuryData: z.object({
         balance: z.number(),
         recentTransactions: z.array(z.object({
@@ -58,6 +61,7 @@ const analyzeTreasurySchema = z.object({
 
 const chatSchema = z.object({
     daoAddress: z.string().min(1),
+    daoId: z.string().min(1).optional(),
     message: z.string().min(1),
     context: z.object({
         daoAddress: z.string().min(1),
@@ -81,6 +85,7 @@ router.get('/health', async (_req, res) => {
         stacks: {
             network: config.stacks.network,
             deployer: config.stacks.daoDeployer,
+            apiUrl: config.stacks.apiUrl,
         },
     });
 });
@@ -103,32 +108,9 @@ router.get('/provider', async (_req, res) => {
 });
 
 /**
- * DAO Config (contracts + network)
+ * DAO Registry (from on-chain factory)
  */
-router.get('/dao/config', (_req, res) => {
-    try {
-        res.json(getDaoConfig());
-    } catch (error) {
-        res.status(500).json({ error: String(error) });
-    }
-});
-
-/**
- * DAO Overview (DAO core + counts + treasury stats)
- */
-router.get('/dao/overview', async (_req, res) => {
-    try {
-        const overview = await fetchDaoOverview();
-        res.json(overview);
-    } catch (error) {
-        res.status(500).json({ error: String(error) });
-    }
-});
-
-/**
- * DAO Proposals (optionally limit to the last N)
- */
-router.get('/dao/proposals', async (req, res) => {
+router.get('/daos', async (req, res) => {
     const querySchema = z.object({
         limit: z
             .string()
@@ -146,7 +128,85 @@ router.get('/dao/proposals', async (req, res) => {
     }
 
     try {
-        const data = await fetchDaoProposals({ limit: parsed.data.limit });
+        const data = await listDaos({ limit: parsed.data.limit });
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: String(error) });
+    }
+});
+
+/**
+ * DAO Config (contracts + network)
+ */
+router.get('/dao/config', async (req, res) => {
+    try {
+        const querySchema = z.object({
+            daoId: z.string().min(1).optional(),
+        });
+        const parsed = querySchema.safeParse(req.query);
+        if (!parsed.success) {
+            res.status(400).json({ error: 'Invalid query params', details: parsed.error.flatten() });
+            return;
+        }
+
+        const ctx = await resolveDaoContext({ daoId: parsed.data.daoId });
+        res.json({
+            network: ctx.network,
+            stacksApiUrl: ctx.stacksApiUrl,
+            deployerAddress: ctx.deployerAddress,
+            contracts: ctx.contracts,
+        });
+    } catch (error) {
+        res.status(500).json({ error: String(error) });
+    }
+});
+
+/**
+ * DAO Overview (DAO core + counts + treasury stats)
+ */
+router.get('/dao/overview', async (req, res) => {
+    try {
+        const querySchema = z.object({
+            daoId: z.string().min(1).optional(),
+        });
+        const parsed = querySchema.safeParse(req.query);
+        if (!parsed.success) {
+            res.status(400).json({ error: 'Invalid query params', details: parsed.error.flatten() });
+            return;
+        }
+
+        const ctx = await resolveDaoContext({ daoId: parsed.data.daoId });
+        const overview = await fetchDaoOverview(ctx);
+        res.json(overview);
+    } catch (error) {
+        res.status(500).json({ error: String(error) });
+    }
+});
+
+/**
+ * DAO Proposals (optionally limit to the last N)
+ */
+router.get('/dao/proposals', async (req, res) => {
+    const querySchema = z.object({
+        daoId: z.string().min(1).optional(),
+        limit: z
+            .string()
+            .optional()
+            .transform((v) => (v ? Number(v) : undefined))
+            .refine((v) => v === undefined || (Number.isFinite(v) && v > 0), {
+                message: 'limit must be a positive number',
+            }),
+    });
+
+    const parsed = querySchema.safeParse(req.query);
+    if (!parsed.success) {
+        res.status(400).json({ error: 'Invalid query params', details: parsed.error.flatten() });
+        return;
+    }
+
+    try {
+        const ctx = await resolveDaoContext({ daoId: parsed.data.daoId });
+        const data = await fetchDaoProposals({ limit: parsed.data.limit, ctx });
         res.json(data);
     } catch (error) {
         res.status(500).json({ error: String(error) });
@@ -158,6 +218,7 @@ router.get('/dao/proposals', async (req, res) => {
  */
 router.get('/dao/treasury', async (req, res) => {
     const querySchema = z.object({
+        daoId: z.string().min(1).optional(),
         recentSpendsLimit: z
             .string()
             .optional()
@@ -174,7 +235,8 @@ router.get('/dao/treasury', async (req, res) => {
     }
 
     try {
-        const data = await fetchDaoTreasury({ recentSpendsLimit: parsed.data.recentSpendsLimit });
+        const ctx = await resolveDaoContext({ daoId: parsed.data.daoId });
+        const data = await fetchDaoTreasury({ recentSpendsLimit: parsed.data.recentSpendsLimit, ctx });
         res.json(data);
     } catch (error) {
         res.status(500).json({ error: String(error) });
@@ -186,6 +248,7 @@ router.get('/dao/treasury', async (req, res) => {
  */
 router.get('/dao/alerts', async (req, res) => {
     const querySchema = z.object({
+        daoId: z.string().min(1).optional(),
         proposalLimit: z
             .string()
             .optional()
@@ -212,10 +275,11 @@ router.get('/dao/alerts', async (req, res) => {
     const recentSpendsLimit = parsed.data.recentSpendsLimit ?? 10;
 
     try {
+        const ctx = await resolveDaoContext({ daoId: parsed.data.daoId });
         const [overview, proposalsRes, treasury] = await Promise.all([
-            fetchDaoOverview(),
-            fetchDaoProposals({ limit: proposalLimit }),
-            fetchDaoTreasury({ recentSpendsLimit }),
+            fetchDaoOverview(ctx),
+            fetchDaoProposals({ limit: proposalLimit, ctx }),
+            fetchDaoTreasury({ recentSpendsLimit, ctx }),
         ]);
 
         res.json(
@@ -236,6 +300,7 @@ router.get('/dao/alerts', async (req, res) => {
 router.get('/dao/voting-power', async (req, res) => {
     const querySchema = z.object({
         address: z.string().min(1),
+        daoId: z.string().min(1).optional(),
     });
 
     const parsed = querySchema.safeParse(req.query);
@@ -245,7 +310,8 @@ router.get('/dao/voting-power', async (req, res) => {
     }
 
     try {
-        const data = await fetchVotingPower(parsed.data.address);
+        const ctx = await resolveDaoContext({ daoId: parsed.data.daoId });
+        const data = await fetchVotingPower(parsed.data.address, ctx);
         res.json(data);
     } catch (error) {
         res.status(500).json({ error: String(error) });
@@ -265,8 +331,9 @@ router.post('/analyze-proposal', async (req, res) => {
             });
             return;
         }
-        const { daoAddress, proposal } = parsed.data;
-        const onChainProposal = await fetchDaoProposalById(BigInt(proposal.id));
+        const { daoAddress, daoId, proposal } = parsed.data;
+        const ctx = await resolveDaoContext({ daoId, coreContractId: daoAddress });
+        const onChainProposal = await fetchDaoProposalById(BigInt(proposal.id), ctx);
         if (!onChainProposal) {
             res.status(404).json({ error: `Proposal ${proposal.id} not found on-chain` });
             return;
@@ -300,8 +367,9 @@ router.post('/voting-recommendation', async (req, res) => {
             });
             return;
         }
-        const { daoAddress, proposal, userPreferences } = parsed.data;
-        const onChainProposal = await fetchDaoProposalById(BigInt(proposal.id));
+        const { daoAddress, daoId, proposal, userPreferences } = parsed.data;
+        const ctx = await resolveDaoContext({ daoId, coreContractId: daoAddress });
+        const onChainProposal = await fetchDaoProposalById(BigInt(proposal.id), ctx);
         if (!onChainProposal) {
             res.status(404).json({ error: `Proposal ${proposal.id} not found on-chain` });
             return;
@@ -339,10 +407,11 @@ router.post('/analyze-treasury', async (req, res) => {
             });
             return;
         }
-        const { daoAddress, treasuryData } = parsed.data;
+        const { daoAddress, daoId, treasuryData } = parsed.data;
+        const ctx = await resolveDaoContext({ daoId, coreContractId: daoAddress });
         let chainTreasury: Awaited<ReturnType<typeof fetchDaoTreasury>> | null = null;
         try {
-            chainTreasury = await fetchDaoTreasury({ recentSpendsLimit: 10 });
+            chainTreasury = await fetchDaoTreasury({ recentSpendsLimit: 10, ctx });
         } catch {
             chainTreasury = null;
         }
@@ -379,14 +448,15 @@ router.post('/chat', async (req, res) => {
             });
             return;
         }
-        const { daoAddress, message, context } = parsed.data;
+        const { daoAddress, daoId, message, context } = parsed.data;
+        const ctx = await resolveDaoContext({ daoId, coreContractId: daoAddress });
         const agent = new DAOAgent(daoAddress);
         // Always enrich chat with live on-chain context (best-effort).
         let enrichedContext = context;
         try {
             const [overview, proposalsRes] = await Promise.all([
-                fetchDaoOverview(),
-                fetchDaoProposals({ limit: 5 }),
+                fetchDaoOverview(ctx),
+                fetchDaoProposals({ limit: 5, ctx }),
             ]);
             enrichedContext = {
                 daoAddress,

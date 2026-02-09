@@ -39,6 +39,27 @@
     background-clip: text;
 }
 
+.dao-select {
+    min-width: 260px;
+    padding: 0.55rem 0.75rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    outline: none;
+}
+
+.dao-select:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+.dao-select option {
+    background: var(--bg-secondary);
+}
+
 .header-status {
     display: flex;
     align-items: center;
@@ -94,6 +115,10 @@
 
     .header-wallet {
         margin-left: auto;
+    }
+
+    .dao-select {
+        min-width: 200px;
     }
 }
 

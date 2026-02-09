@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import { Header } from './components/Header';
 import { StatsCards } from './components/StatsCards';
@@ -14,6 +14,7 @@ import type {
   DaoConfig,
   DaoOverview,
   DaoProposal,
+  DaoRegistryResponse,
   DaoTreasuryResponse,
   DaoVotingPower,
   HealthStatus,
@@ -25,6 +26,8 @@ import { formatMicroStx, shortPrincipal } from './utils/stx';
 function App() {
   const { userAddress } = useWallet();
   const [health, setHealth] = useState<HealthStatus | null>(null);
+  const [daoRegistry, setDaoRegistry] = useState<DaoRegistryResponse | null>(null);
+  const [selectedDaoId, setSelectedDaoId] = useState<string | undefined>(undefined);
   const [daoConfig, setDaoConfig] = useState<DaoConfig | null>(null);
   const [overview, setOverview] = useState<DaoOverview | null>(null);
   const [proposals, setProposals] = useState<DaoProposal[]>([]);
@@ -35,18 +38,32 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showCreateProposal, setShowCreateProposal] = useState(false);
+  const loadRequestIdRef = useRef(0);
 
-  useEffect(() => {
-    Promise.all([
-      api.health(),
-      api.daoConfig(),
-      api.daoOverview(),
-      api.daoProposals(50),
-      api.daoTreasury(10),
-      api.daoAlerts(10, 10).catch(() => null),
+  const loadDao = (daoId: string | undefined, opts?: { keepExisting?: boolean }) => {
+    const requestId = ++loadRequestIdRef.current;
+    setLoading(true);
+    setLoadError(null);
+    if (!opts?.keepExisting) {
+      setDaoConfig(null);
+      setOverview(null);
+      setProposals([]);
+      setTreasury(null);
+      setTreasuryInsight(null);
+      setVotingPower(null);
+      setAlerts(null);
+    }
+
+    return Promise.all([
+      api.daoConfig(daoId),
+      api.daoOverview(daoId),
+      api.daoProposals(daoId, 50),
+      api.daoTreasury(daoId, 10),
+      api.daoAlerts(daoId, 10, 10).catch(() => null),
     ])
-      .then(([healthRes, configRes, overviewRes, proposalsRes, treasuryRes, alertsRes]) => {
-        setHealth(healthRes);
+      .then(([configRes, overviewRes, proposalsRes, treasuryRes, alertsRes]) => {
+        if (requestId !== loadRequestIdRef.current) return;
+
         setDaoConfig(configRes);
         setOverview(overviewRes);
         setProposals(proposalsRes.proposals);
@@ -61,24 +78,62 @@ function App() {
           recipient: s.recipient,
           timestamp: Number(s.spentAtBlock),
         }));
+
         void api
-          .analyzeTreasury(daoAddress, {
-            balance: Number(treasuryRes.stats.stxBalance) / 1_000_000,
-            recentTransactions,
+          .analyzeTreasury(
+            daoAddress,
+            {
+              balance: Number(treasuryRes.stats.stxBalance) / 1_000_000,
+              recentTransactions,
+            },
+            daoId
+          )
+          .then((insight) => {
+            if (requestId !== loadRequestIdRef.current) return;
+            setTreasuryInsight(insight);
           })
-          .then(setTreasuryInsight)
-          .catch(() => setTreasuryInsight(null));
+          .catch(() => {
+            if (requestId !== loadRequestIdRef.current) return;
+            setTreasuryInsight(null);
+          });
       })
       .catch((err) => {
+        if (requestId !== loadRequestIdRef.current) return;
         console.error(err);
         setLoadError(err instanceof Error ? err.message : String(err));
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (requestId !== loadRequestIdRef.current) return;
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    const requestId = ++loadRequestIdRef.current;
+    Promise.all([api.health(), api.daos(50).catch(() => null)])
+      .then(([healthRes, registryRes]) => {
+        if (requestId !== loadRequestIdRef.current) return;
+        setHealth(healthRes);
+        setDaoRegistry(registryRes);
+
+        const initialDaoId =
+          registryRes?.defaultDaoId ??
+          registryRes?.daos[registryRes.daos.length - 1]?.daoId;
+        setSelectedDaoId(initialDaoId);
+
+        return loadDao(initialDaoId, { keepExisting: true });
+      })
+      .catch((err) => {
+        if (requestId !== loadRequestIdRef.current) return;
+        console.error(err);
+        setLoadError(err instanceof Error ? err.message : String(err));
+        setLoading(false);
+      });
   }, []);
 
   const refreshProposals = () => {
     void api
-      .daoProposals(50)
+      .daoProposals(selectedDaoId, 50)
       .then((res) => setProposals(res.proposals))
       .catch(console.error);
   };
@@ -86,10 +141,10 @@ function App() {
   useEffect(() => {
     if (!userAddress) return;
     void api
-      .daoVotingPower(userAddress)
+      .daoVotingPower(selectedDaoId, userAddress)
       .then(setVotingPower)
       .catch(() => setVotingPower(null));
-  }, [userAddress]);
+  }, [selectedDaoId, userAddress]);
 
   const daoTitle = useMemo(() => {
     const name = overview?.dao.name?.trim();
@@ -122,6 +177,12 @@ function App() {
         daoName={daoTitle}
         network={daoConfig?.network || health?.stacks.network || 'testnet'}
         llmAvailable={health?.llm.available}
+        daoOptions={daoRegistry?.daos.map((d) => ({ id: d.daoId, name: d.name })) ?? []}
+        selectedDaoId={selectedDaoId}
+        onDaoChange={(nextDaoId) => {
+          setSelectedDaoId(nextDaoId);
+          void loadDao(nextDaoId);
+        }}
       />
 
       <main className="main container">

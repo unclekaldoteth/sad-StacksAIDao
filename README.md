@@ -18,6 +18,7 @@ This repository contains three coordinated packages:
 
 1. `dao-factory` defines on-chain governance behavior and treasury logic in Clarity.
 2. `backend` exposes:
+   - DAO registry from the on-chain factory (`GET /api/daos`)
    - read-only on-chain DAO state (`GET /api/dao/*`)
    - heuristic risk scanning and alerts (`GET /api/dao/alerts`)
    - AI endpoints (`POST /api/analyze-proposal`, `POST /api/voting-recommendation`, `POST /api/analyze-treasury`, `POST /api/chat`) that pull live on-chain context before prompting the LLM.
@@ -57,6 +58,18 @@ npm run dev
 
 Backend runs on `http://localhost:3001` by default.
 
+#### Multi-DAO Mode (Registry)
+
+If you deploy multiple DAOs and register them in the `dao-factory` contract, the backend can list/switch DAOs via the factory registry:
+
+- `GET /api/daos` lists registered DAOs
+- all `/api/dao/*` endpoints accept `?daoId=<number>` to target a specific DAO
+
+Configure in `backend/.env`:
+
+- `DAO_FACTORY_CONTRACT_ID` (optional, defaults to `${DAO_DEPLOYER_ADDRESS}.dao-factory`)
+- `DAO_DEFAULT_ID` (optional, selects the default DAO from the registry)
+
 ### 2) Frontend
 
 ```bash
@@ -85,7 +98,7 @@ Note: `dao-factory/settings/Mainnet.toml` and `dao-factory/settings/Testnet.toml
 
 - Backend: `cd backend && npm test`
 - DAO contracts: `cd dao-factory && npm test`
-- Frontend: no test suite configured yet
+- Frontend: `cd frontend && npm run lint && npm run build` (no test suite configured yet)
 
 ## Useful Docs
 

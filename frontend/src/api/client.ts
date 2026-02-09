@@ -41,7 +41,7 @@ export interface TreasuryInsight {
 export interface HealthStatus {
     status: string;
     llm: { provider: string; available: boolean };
-    stacks: { network: string; deployer: string };
+    stacks: { network: string; deployer: string; apiUrl?: string };
 }
 
 export type DaoContracts = {
@@ -62,6 +62,25 @@ export interface DaoConfig {
     stacksApiUrl: string;
     deployerAddress: string;
     contracts: DaoContracts;
+}
+
+export interface DaoRegistryEntry {
+    daoId: string;
+    name: string;
+    coreContractId: ContractIdString;
+    contractAddress: string;
+    registeredBy: string;
+    deployedAtBlock: string;
+    templateId: string;
+    network: string;
+    stacksApiUrl: string;
+    contracts: DaoContracts;
+}
+
+export interface DaoRegistryResponse {
+    factoryContractId: string | null;
+    defaultDaoId: string | null;
+    daos: DaoRegistryEntry[];
 }
 
 export interface DaoOverview {
@@ -187,28 +206,58 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
 
 export const api = {
     health: () => request<HealthStatus>('/api/health'),
-    daoConfig: () => request<DaoConfig>('/api/dao/config'),
-    daoOverview: () => request<DaoOverview>('/api/dao/overview'),
-    daoProposals: (limit?: number) =>
-        request<DaoProposalsResponse>(`/api/dao/proposals${limit ? `?limit=${limit}` : ''}`),
-    daoTreasury: (recentSpendsLimit?: number) =>
-        request<DaoTreasuryResponse>(
-            `/api/dao/treasury${recentSpendsLimit ? `?recentSpendsLimit=${recentSpendsLimit}` : ''}`
-        ),
-    daoAlerts: (proposalLimit?: number, recentSpendsLimit?: number) => {
+    daos: (limit?: number) => {
         const params = new URLSearchParams();
+        if (limit) params.set('limit', String(limit));
+        const query = params.toString();
+        return request<DaoRegistryResponse>(`/api/daos${query ? `?${query}` : ''}`);
+    },
+    daoConfig: (daoId?: string) => {
+        const params = new URLSearchParams();
+        if (daoId) params.set('daoId', daoId);
+        const query = params.toString();
+        return request<DaoConfig>(`/api/dao/config${query ? `?${query}` : ''}`);
+    },
+    daoOverview: (daoId?: string) => {
+        const params = new URLSearchParams();
+        if (daoId) params.set('daoId', daoId);
+        const query = params.toString();
+        return request<DaoOverview>(`/api/dao/overview${query ? `?${query}` : ''}`);
+    },
+    daoProposals: (daoId?: string, limit?: number) => {
+        const params = new URLSearchParams();
+        if (daoId) params.set('daoId', daoId);
+        if (limit) params.set('limit', String(limit));
+        const query = params.toString();
+        return request<DaoProposalsResponse>(`/api/dao/proposals${query ? `?${query}` : ''}`);
+    },
+    daoTreasury: (daoId?: string, recentSpendsLimit?: number) => {
+        const params = new URLSearchParams();
+        if (daoId) params.set('daoId', daoId);
+        if (recentSpendsLimit) params.set('recentSpendsLimit', String(recentSpendsLimit));
+        const query = params.toString();
+        return request<DaoTreasuryResponse>(`/api/dao/treasury${query ? `?${query}` : ''}`);
+    },
+    daoAlerts: (daoId?: string, proposalLimit?: number, recentSpendsLimit?: number) => {
+        const params = new URLSearchParams();
+        if (daoId) params.set('daoId', daoId);
         if (proposalLimit) params.set('proposalLimit', String(proposalLimit));
         if (recentSpendsLimit) params.set('recentSpendsLimit', String(recentSpendsLimit));
         const query = params.toString();
         return request<DaoAlertsResponse>(`/api/dao/alerts${query ? `?${query}` : ''}`);
     },
-    daoVotingPower: (address: string) =>
-        request<DaoVotingPower>(`/api/dao/voting-power?address=${encodeURIComponent(address)}`),
+    daoVotingPower: (daoId: string | undefined, address: string) => {
+        const params = new URLSearchParams();
+        if (daoId) params.set('daoId', daoId);
+        params.set('address', address);
+        const query = params.toString();
+        return request<DaoVotingPower>(`/api/dao/voting-power?${query}`);
+    },
 
-    analyzeProposal: (daoAddress: string, proposal: Proposal) =>
+    analyzeProposal: (daoAddress: string, proposal: Proposal, daoId?: string) =>
         request<ProposalAnalysis>('/api/analyze-proposal', {
             method: 'POST',
-            body: JSON.stringify({ daoAddress, proposal }),
+            body: JSON.stringify({ daoAddress, daoId, proposal }),
         }),
 
     getVotingRecommendation: (
@@ -218,11 +267,12 @@ export const api = {
             votesFor?: number;
             votesAgainst?: number;
         },
-        userPreferences?: string
+        userPreferences?: string,
+        daoId?: string
     ) =>
         request<VotingRecommendation>('/api/voting-recommendation', {
             method: 'POST',
-            body: JSON.stringify({ daoAddress, proposal, userPreferences }),
+            body: JSON.stringify({ daoAddress, daoId, proposal, userPreferences }),
         }),
 
     analyzeTreasury: (
@@ -230,16 +280,17 @@ export const api = {
         treasuryData: {
             balance: number;
             recentTransactions: { amount: number; recipient: string; timestamp: number }[];
-        }
+        },
+        daoId?: string
     ) =>
         request<TreasuryInsight>('/api/analyze-treasury', {
             method: 'POST',
-            body: JSON.stringify({ daoAddress, treasuryData }),
+            body: JSON.stringify({ daoAddress, daoId, treasuryData }),
         }),
 
-    chat: (daoAddress: string, message: string) =>
+    chat: (daoAddress: string, message: string, daoId?: string) =>
         request<{ response: string }>('/api/chat', {
             method: 'POST',
-            body: JSON.stringify({ daoAddress, message }),
+            body: JSON.stringify({ daoAddress, daoId, message }),
         }),
 };
