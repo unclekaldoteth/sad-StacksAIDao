@@ -5,10 +5,12 @@ import { StatsCards } from './components/StatsCards';
 import { ProposalCard } from './components/ProposalCard';
 import { AIChat } from './components/AIChat';
 import { AIAgentCards } from './components/AIAgentCards';
+import { AlertsPanel } from './components/AlertsPanel';
 import { TreasuryPanel } from './components/TreasuryPanel';
 import { CreateProposalModal } from './components/CreateProposalModal';
 import { api } from './api/client';
 import type {
+  DaoAlertsResponse,
   DaoConfig,
   DaoOverview,
   DaoProposal,
@@ -29,6 +31,7 @@ function App() {
   const [treasury, setTreasury] = useState<DaoTreasuryResponse | null>(null);
   const [treasuryInsight, setTreasuryInsight] = useState<TreasuryInsight | null>(null);
   const [votingPower, setVotingPower] = useState<DaoVotingPower | null>(null);
+  const [alerts, setAlerts] = useState<DaoAlertsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showCreateProposal, setShowCreateProposal] = useState(false);
@@ -40,25 +43,27 @@ function App() {
       api.daoOverview(),
       api.daoProposals(50),
       api.daoTreasury(10),
+      api.daoAlerts(10, 10).catch(() => null),
     ])
-      .then(([healthRes, configRes, overviewRes, proposalsRes, treasuryRes]) => {
+      .then(([healthRes, configRes, overviewRes, proposalsRes, treasuryRes, alertsRes]) => {
         setHealth(healthRes);
         setDaoConfig(configRes);
         setOverview(overviewRes);
         setProposals(proposalsRes.proposals);
         setTreasury(treasuryRes);
+        setAlerts(alertsRes);
 
         // Optional: ask the AI for treasury recommendations based on live on-chain data.
         // This is intentionally "best effort" and should not block the dashboard.
         const daoAddress = configRes.contracts.core;
         const recentTransactions = treasuryRes.recentSpends.slice(0, 10).map((s) => ({
-          amount: Number(s.amount),
+          amount: Number(s.amount) / 1_000_000,
           recipient: s.recipient,
           timestamp: Number(s.spentAtBlock),
         }));
         void api
           .analyzeTreasury(daoAddress, {
-            balance: Number(treasuryRes.stats.stxBalance),
+            balance: Number(treasuryRes.stats.stxBalance) / 1_000_000,
             recentTransactions,
           })
           .then(setTreasuryInsight)
@@ -128,6 +133,8 @@ function App() {
             proposalCount={Number(overview?.counts.proposals ?? 0)}
             memberCount={Number(overview?.counts.members ?? 0)}
             healthScore={treasuryInsight?.healthScore}
+            riskScore={alerts?.riskScore}
+            alertCount={alerts?.alerts.length}
             userVotingPowerStx={
               votingPower ? formatMicroStx(votingPower.votingPower) : null
             }
@@ -142,6 +149,11 @@ function App() {
             Intelligent agents monitoring and assisting with DAO governance
           </p>
           <AIAgentCards />
+          <AlertsPanel
+            riskScore={alerts?.riskScore ?? 0}
+            alerts={alerts?.alerts ?? []}
+            generatedAt={alerts?.generatedAt}
+          />
         </section>
 
         {/* Main content grid */}

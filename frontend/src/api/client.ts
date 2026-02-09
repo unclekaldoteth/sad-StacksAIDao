@@ -132,6 +132,29 @@ export interface DaoVotingPower {
     totalVotingPower: string;
 }
 
+export type DaoAlertLevel = 'info' | 'warning' | 'critical';
+export type DaoAlertType = 'proposal' | 'treasury-spend' | 'treasury-balance' | 'participation';
+
+export interface DaoAlert {
+    id: string;
+    level: DaoAlertLevel;
+    type: DaoAlertType;
+    title: string;
+    message: string;
+    proposalId?: string;
+    spendId?: string;
+}
+
+export interface DaoAlertsResponse {
+    generatedAt: string;
+    riskScore: number;
+    scanned: {
+        proposals: number;
+        spends: number;
+    };
+    alerts: DaoAlert[];
+}
+
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const res = await fetch(`${API_BASE}${endpoint}`, {
         ...options,
@@ -172,6 +195,13 @@ export const api = {
         request<DaoTreasuryResponse>(
             `/api/dao/treasury${recentSpendsLimit ? `?recentSpendsLimit=${recentSpendsLimit}` : ''}`
         ),
+    daoAlerts: (proposalLimit?: number, recentSpendsLimit?: number) => {
+        const params = new URLSearchParams();
+        if (proposalLimit) params.set('proposalLimit', String(proposalLimit));
+        if (recentSpendsLimit) params.set('recentSpendsLimit', String(recentSpendsLimit));
+        const query = params.toString();
+        return request<DaoAlertsResponse>(`/api/dao/alerts${query ? `?${query}` : ''}`);
+    },
     daoVotingPower: (address: string) =>
         request<DaoVotingPower>(`/api/dao/voting-power?address=${encodeURIComponent(address)}`),
 

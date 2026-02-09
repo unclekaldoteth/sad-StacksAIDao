@@ -17,18 +17,26 @@ This repository contains three coordinated packages:
 ## How the Packages Fit Together
 
 1. `dao-factory` defines on-chain governance behavior and treasury logic in Clarity.
-2. `backend` provides AI-assisted analysis and chat endpoints and also exposes read-only on-chain DAO state endpoints (`/api/dao/*`).
-3. `frontend` presents proposals and assistant interactions, consumes `/api/dao/*` for real on-chain state, and uses wallet transactions for voting/proposals.
-4. DAO contract state and identities can be passed through API payloads (for example `daoAddress`) so off-chain assistant logic can stay context-aware.
+2. `backend` exposes:
+   - read-only on-chain DAO state (`GET /api/dao/*`)
+   - heuristic risk scanning and alerts (`GET /api/dao/alerts`)
+   - AI endpoints (`POST /api/analyze-proposal`, `POST /api/voting-recommendation`, `POST /api/analyze-treasury`, `POST /api/chat`) that pull live on-chain context before prompting the LLM.
+3. `frontend` presents proposals and assistant interactions, consumes `/api/dao/*` and `/api/dao/alerts` for real on-chain state, and uses wallet transactions for proposal creation and voting.
 
 ## Architecture Diagram
 
 ```mermaid
-flowchart LR
+flowchart TB
   U["DAO Member"] --> F["frontend (React + Vite)"]
   F -->|"REST: /api/*"| B["backend (Express + DAO Agent)"]
   B -->|"LLM completion/stream"| P["LLM Provider (Ollama/OpenAI/Anthropic/Together/Groq/Gemini)"]
-  B -->|"DAO context (daoAddress, proposal/treasury payloads)"| C["dao-factory (Clarity contracts)"]
+
+  subgraph Chain["Stacks Blockchain (Deployed DAO Instance)"]
+    DAO["dao-factory (Clarity: DAO Core + Extensions)"]
+  end
+
+  B -->|"read-only calls (STACKS_API_URL)"| DAO
+  F -->|"wallet tx (propose/vote)"| DAO
 ```
 
 ## Local Development

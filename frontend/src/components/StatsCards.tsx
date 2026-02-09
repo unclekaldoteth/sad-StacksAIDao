@@ -5,6 +5,8 @@ interface StatsCardsProps {
     proposalCount: number;
     memberCount: number;
     healthScore?: number;
+    riskScore?: number;
+    alertCount?: number;
     userVotingPowerStx: string | null;
     userAddress: string | null;
 }
@@ -14,6 +16,8 @@ export function StatsCards({
     proposalCount,
     memberCount,
     healthScore,
+    riskScore,
+    alertCount,
     userVotingPowerStx,
     userAddress
 }: StatsCardsProps) {
@@ -68,6 +72,22 @@ export function StatsCards({
                         ></div>
                     </div>
                     <span className="stat-value">{healthScore ?? 0}/100</span>
+                </div>
+            </div>
+
+            <div className="stat-card">
+                <div className="stat-icon">🛡️</div>
+                <div className="stat-info">
+                    <span className="stat-label">
+                        Risk Score{typeof alertCount === 'number' ? ` (${alertCount} alerts)` : ''}
+                    </span>
+                    <div className="health-bar">
+                        <div
+                            className="risk-fill"
+                            style={{ width: `${riskScore ?? 0}%` }}
+                        ></div>
+                    </div>
+                    <span className="stat-value">{riskScore ?? 0}/100</span>
                 </div>
             </div>
         </div>

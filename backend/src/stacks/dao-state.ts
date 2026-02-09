@@ -143,6 +143,46 @@ async function callDaoReadOnly(
     });
 }
 
+async function fetchDaoProposalByIdWithContracts(
+    contracts: DaoContracts,
+    id: bigint
+): Promise<DaoProposal | null> {
+    const [proposalOptCv, votesCv] = await Promise.all([
+        callDaoReadOnly(contracts.proposals, 'get-proposal', [uintCV(id)]),
+        callDaoReadOnly(contracts.voting, 'get-proposal-votes', [uintCV(id)]),
+    ]);
+
+    const proposalCv = unwrapOptional(proposalOptCv);
+    if (!proposalCv) {
+        return null;
+    }
+
+    const proposal = expectTuple(proposalCv);
+    const votes = expectTuple(votesCv);
+
+    const proposalContractCv = unwrapOptional(proposal['proposal-contract']);
+    const proposalContract = proposalContractCv ? expectPrincipalString(proposalContractCv) : null;
+
+    return {
+        id: id.toString(),
+        title: expectString(proposal.title),
+        description: expectString(proposal.description),
+        proposer: expectPrincipalString(proposal.proposer),
+        status: mapProposalStatus(expectUintString(proposal.status)),
+        createdAtBlock: expectUintString(proposal['created-at']),
+        startBlock: expectUintString(proposal['start-block']),
+        endBlock: expectUintString(proposal['end-block']),
+        proposalContract,
+        votes: {
+            for: expectUintString(votes['votes-for']),
+            against: expectUintString(votes['votes-against']),
+            abstain: expectUintString(votes['votes-abstain']),
+            total: expectUintString(votes['total-votes']),
+            voterCount: expectUintString(votes['voter-count']),
+        },
+    } satisfies DaoProposal;
+}
+
 export async function fetchDaoOverview(): Promise<DaoOverviewResponse> {
     const { contracts } = getDaoConfig();
 
@@ -190,42 +230,7 @@ export async function fetchDaoProposals(opts?: {
 
     // Fetch proposals (and votes) in parallel. For large DAOs we should add concurrency limits.
     const results = await Promise.all(
-        ids.map(async (id) => {
-            const [proposalOptCv, votesCv] = await Promise.all([
-                callDaoReadOnly(contracts.proposals, 'get-proposal', [uintCV(id)]),
-                callDaoReadOnly(contracts.voting, 'get-proposal-votes', [uintCV(id)]),
-            ]);
-
-            const proposalCv = unwrapOptional(proposalOptCv);
-            if (!proposalCv) {
-                return null;
-            }
-
-            const proposal = expectTuple(proposalCv);
-            const votes = expectTuple(votesCv);
-
-            const proposalContractCv = unwrapOptional(proposal['proposal-contract']);
-            const proposalContract = proposalContractCv ? expectPrincipalString(proposalContractCv) : null;
-
-            return {
-                id: id.toString(),
-                title: expectString(proposal.title),
-                description: expectString(proposal.description),
-                proposer: expectPrincipalString(proposal.proposer),
-                status: mapProposalStatus(expectUintString(proposal.status)),
-                createdAtBlock: expectUintString(proposal['created-at']),
-                startBlock: expectUintString(proposal['start-block']),
-                endBlock: expectUintString(proposal['end-block']),
-                proposalContract,
-                votes: {
-                    for: expectUintString(votes['votes-for']),
-                    against: expectUintString(votes['votes-against']),
-                    abstain: expectUintString(votes['votes-abstain']),
-                    total: expectUintString(votes['total-votes']),
-                    voterCount: expectUintString(votes['voter-count']),
-                },
-            } satisfies DaoProposal;
-        })
+        ids.map((id) => fetchDaoProposalByIdWithContracts(contracts, id))
     );
 
     return { proposals: results.filter((p): p is DaoProposal => Boolean(p)) };
@@ -237,6 +242,11 @@ function expectPrincipalString(cv: ClarityValue): string {
         return json.value;
     }
     throw new Error(`Expected principal, got: ${JSON.stringify(json)}`);
+}
+
+export async function fetchDaoProposalById(id: bigint): Promise<DaoProposal | null> {
+    const { contracts } = getDaoConfig();
+    return fetchDaoProposalByIdWithContracts(contracts, id);
 }
 
 export async function fetchDaoTreasury(opts?: {

@@ -7,6 +7,101 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import express, { type Express } from 'express';
 import { apiRouter } from '../src/api/routes.js';
 
+// Mock on-chain reads (DAO state)
+vi.mock('../src/stacks/dao-state.js', () => ({
+    fetchDaoOverview: vi.fn(async () => ({
+        dao: { name: 'Test DAO', description: 'Test description' },
+        counts: { members: '100', proposals: '1' },
+        treasury: {
+            stxBalance: '100000000', // 100 STX
+            totalReceived: '0',
+            totalSpent: '0',
+            spendCount: '1',
+        },
+    })),
+    fetchDaoProposals: vi.fn(async () => ({
+        proposals: [
+            {
+                id: '1',
+                title: 'On-chain Title',
+                description: 'Urgent transfer to ST1RECIPIENT for security patch',
+                proposer: 'ST1ONCHAIN',
+                status: 'active',
+                createdAtBlock: '100',
+                startBlock: '110',
+                endBlock: '120',
+                proposalContract: null,
+                votes: {
+                    for: '10',
+                    against: '2',
+                    abstain: '0',
+                    total: '12',
+                    voterCount: '0',
+                },
+            },
+        ],
+    })),
+    fetchDaoProposalById: vi.fn(async (id: bigint) => ({
+        id: id.toString(),
+        title: 'On-chain Title',
+        description: 'Urgent transfer to ST1RECIPIENT for security patch',
+        proposer: 'ST1ONCHAIN',
+        status: 'active',
+        createdAtBlock: '100',
+        startBlock: '110',
+        endBlock: '120',
+        proposalContract: null,
+        votes: {
+            for: '10',
+            against: '2',
+            abstain: '0',
+            total: '12',
+            voterCount: '0',
+        },
+    })),
+    fetchDaoTreasury: vi.fn(async () => ({
+        stats: {
+            stxBalance: '100000000', // 100 STX
+            totalReceived: '0',
+            totalSpent: '0',
+            spendCount: '1',
+        },
+        recentSpends: [
+            {
+                spendId: '1',
+                asset: 'STX',
+                amount: '25000000', // 25 STX (25% of 100 STX)
+                recipient: 'ST1ALICE',
+                proposalId: null,
+                spentAtBlock: '999',
+                spentBy: 'ST1DAO',
+            },
+        ],
+    })),
+    fetchVotingPower: vi.fn(async (address: string) => ({
+        address,
+        votingPower: '0',
+        totalVotingPower: '0',
+    })),
+    getDaoConfig: vi.fn(() => ({
+        network: 'testnet',
+        stacksApiUrl: 'http://mock',
+        deployerAddress: 'ST1TEST',
+        contracts: {
+            core: 'ST1TEST.dao-core',
+            proposals: 'ST1TEST.proposal-submission',
+            voting: 'ST1TEST.proposal-voting',
+            treasury: 'ST1TEST.treasury',
+            treasuryActions: 'ST1TEST.treasury-actions',
+            governanceToken: 'ST1TEST.governance-token',
+            membership: 'ST1TEST.membership',
+            extensionsRegistry: 'ST1TEST.extensions-registry',
+            templateRegistry: 'ST1TEST.template-registry',
+            factory: 'ST1TEST.factory',
+        },
+    })),
+}));
+
 // Mock the providers
 vi.mock('../src/providers/index.js', () => ({
     getLLMProvider: vi.fn(() => ({
@@ -24,11 +119,12 @@ vi.mock('../src/providers/index.js', () => ({
 vi.mock('../src/config/index.js', () => ({
     config: {
         llm: { provider: 'mock' },
-        stacks: { network: 'testnet', daoDeployer: 'ST1TEST' },
+        stacks: { network: 'testnet', daoDeployer: 'ST1TEST', apiUrl: 'http://mock' },
     },
 }));
 
 import { getLLMProvider, ProviderFactory } from '../src/providers/index.js';
+import { fetchDaoTreasury } from '../src/stacks/dao-state.js';
 
 // Simple request helper
 async function request(app: Express, method: string, path: string, body?: object) {
@@ -65,6 +161,7 @@ async function request(app: Express, method: string, path: string, body?: object
 
 describe('API Routes', () => {
     let app: Express;
+    const completeMock = vi.fn();
 
     beforeEach(() => {
         app = express();
@@ -72,9 +169,13 @@ describe('API Routes', () => {
         app.use('/api', apiRouter);
 
         // Reset mocks
+        completeMock.mockReset();
+        completeMock.mockResolvedValue({
+            content: '{"summary":"test","riskLevel":"low","recommendation":"approve","reasoning":"ok","keyPoints":[]}',
+        });
         vi.mocked(getLLMProvider).mockReturnValue({
             name: 'mock',
-            complete: async () => ({ content: '{"summary":"test","riskLevel":"low","recommendation":"approve","reasoning":"ok","keyPoints":[]}' }),
+            complete: completeMock,
             isAvailable: async () => true,
             getModel: () => 'mock-model',
         } as any);
@@ -136,15 +237,16 @@ describe('API Routes', () => {
                 daoAddress: 'ST1TEST',
                 proposal: {
                     id: 1,
-                    title: 'Test Proposal',
-                    description: 'A test proposal for unit testing',
-                    proposer: 'ST1ALICE',
+                    title: 'Client Title',
+                    description: 'Client Description',
+                    proposer: 'ST1CLIENT',
                     amount: 100,
                 },
             });
 
             expect(res.status).toBe(200);
             expect(res.body.proposalId).toBe(1);
+            expect(res.body.title).toBe('On-chain Title');
             expect(res.body.riskLevel).toBeDefined();
             expect(res.body.recommendation).toBeDefined();
         });
@@ -182,12 +284,10 @@ describe('API Routes', () => {
 
     describe('POST /api/voting-recommendation', () => {
         beforeEach(() => {
-            vi.mocked(getLLMProvider).mockReturnValue({
-                name: 'mock',
-                complete: async () => ({ content: '{"vote":"for","confidence":85,"reasoning":"Good proposal"}' }),
-                isAvailable: async () => true,
-                getModel: () => 'mock-model',
-            } as any);
+            completeMock.mockReset();
+            completeMock.mockResolvedValue({
+                content: '{"vote":"for","confidence":85,"reasoning":"Good proposal"}',
+            });
         });
 
         it('returns voting recommendation', async () => {
@@ -195,8 +295,8 @@ describe('API Routes', () => {
                 daoAddress: 'ST1TEST',
                 proposal: {
                     id: 1,
-                    title: 'Community Fund',
-                    description: 'Allocate funds for community',
+                    title: 'Client Title',
+                    description: 'Client Description',
                 },
             });
 
@@ -204,6 +304,10 @@ describe('API Routes', () => {
             expect(res.body.proposalId).toBe(1);
             expect(res.body.vote).toBeDefined();
             expect(res.body.confidence).toBeTypeOf('number');
+
+            const llmCall = completeMock.mock.calls[0]?.[0] as any;
+            expect(llmCall).toBeDefined();
+            expect(llmCall.messages?.[1]?.content).toContain('Title: On-chain Title');
         });
 
         it('accepts additional proposal context fields', async () => {
@@ -245,12 +349,10 @@ describe('API Routes', () => {
 
     describe('POST /api/analyze-treasury', () => {
         beforeEach(() => {
-            vi.mocked(getLLMProvider).mockReturnValue({
-                name: 'mock',
-                complete: async () => ({ content: '{"healthScore":80,"recommendations":["Diversify"]}' }),
-                isAvailable: async () => true,
-                getModel: () => 'mock-model',
-            } as any);
+            completeMock.mockReset();
+            completeMock.mockResolvedValue({
+                content: '{"healthScore":80,"recommendations":["Diversify"]}',
+            });
         });
 
         it('returns treasury analysis', async () => {
@@ -265,12 +367,23 @@ describe('API Routes', () => {
             });
 
             expect(res.status).toBe(200);
-            expect(res.body.totalBalance).toBe(10000);
+            // Backend prefers on-chain data as source of truth (mocked at 100 STX).
+            expect(res.body.totalBalance).toBe(100);
             expect(res.body.healthScore).toBeTypeOf('number');
             expect(res.body.recommendations).toBeInstanceOf(Array);
         });
 
         it('handles empty transactions', async () => {
+            vi.mocked(fetchDaoTreasury).mockResolvedValueOnce({
+                stats: {
+                    stxBalance: '100000000',
+                    totalReceived: '0',
+                    totalSpent: '0',
+                    spendCount: '0',
+                },
+                recentSpends: [],
+            } as any);
+
             const res = await request(app, 'POST', '/api/analyze-treasury', {
                 daoAddress: 'ST1TEST',
                 treasuryData: {
@@ -285,17 +398,31 @@ describe('API Routes', () => {
     });
 
     // ==========================================
+    // DAO Alerts
+    // ==========================================
+
+    describe('GET /api/dao/alerts', () => {
+        it('returns risk alerts from on-chain context', async () => {
+            const res = await request(app, 'GET', '/api/dao/alerts');
+
+            expect(res.status).toBe(200);
+            expect(res.body.riskScore).toBeTypeOf('number');
+            expect(res.body.alerts).toBeInstanceOf(Array);
+            expect(res.body.scanned).toBeDefined();
+            expect(res.body.generatedAt).toBeTypeOf('string');
+        });
+    });
+
+    // ==========================================
     // Chat
     // ==========================================
 
     describe('POST /api/chat', () => {
         beforeEach(() => {
-            vi.mocked(getLLMProvider).mockReturnValue({
-                name: 'mock',
-                complete: async () => ({ content: 'A DAO is a decentralized autonomous organization.' }),
-                isAvailable: async () => true,
-                getModel: () => 'mock-model',
-            } as any);
+            completeMock.mockReset();
+            completeMock.mockResolvedValue({
+                content: 'A DAO is a decentralized autonomous organization.',
+            });
         });
 
         it('returns chat response', async () => {

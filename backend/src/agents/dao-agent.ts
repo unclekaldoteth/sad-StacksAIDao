@@ -191,8 +191,8 @@ Respond in this JSON format:
             title: string;
             description: string;
             proposer?: string;
-            votesFor?: number;
-            votesAgainst?: number;
+            votesFor?: number | string;
+            votesAgainst?: number | string;
         },
         userPreferences?: string
     ): Promise<VotingRecommendation> {
@@ -328,9 +328,33 @@ Respond in this JSON format:
     async chat(message: string, context?: AgentContext): Promise<string> {
         const llm = getLLMProvider();
 
-        const contextInfo = context
-            ? `\nContext: DAO Address: ${context.daoAddress}, User: ${context.userAddress ?? 'Anonymous'}`
-            : '';
+        const contextInfo = (() => {
+            if (!context) return '';
+            const lines: string[] = [];
+            lines.push(`DAO Address: ${context.daoAddress}`);
+            lines.push(`User: ${context.userAddress ?? 'Anonymous'}`);
+            if (typeof context.treasuryBalance === 'number') {
+                lines.push(`Treasury Balance (STX): ${context.treasuryBalance}`);
+            }
+            if (Array.isArray(context.recentProposals) && context.recentProposals.length > 0) {
+                const summaries = context.recentProposals
+                    .slice(0, 5)
+                    .map((p) => {
+                        if (!p || typeof p !== 'object') return null;
+                        const obj = p as Record<string, unknown>;
+                        const id = typeof obj.id === 'string' || typeof obj.id === 'number' ? obj.id : '?';
+                        const title = typeof obj.title === 'string' ? obj.title : '';
+                        const status = typeof obj.status === 'string' ? obj.status : '';
+                        return `- [${id}] ${title}${status ? ` (${status})` : ''}`.trim();
+                    })
+                    .filter((v): v is string => Boolean(v));
+                if (summaries.length > 0) {
+                    lines.push('Recent Proposals:');
+                    lines.push(...summaries);
+                }
+            }
+            return `\nContext:\n${lines.join('\n')}`;
+        })();
 
         const response = await llm.complete({
             messages: [
