@@ -20,6 +20,12 @@ Set the API base URL in `.env`:
 VITE_API_URL=http://localhost:3001
 ```
 
+Select Stacks network:
+
+```
+VITE_STACKS_NETWORK=testnet
+```
+
 ## Build
 
 ```bash

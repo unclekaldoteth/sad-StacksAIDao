@@ -1,4 +1,4 @@
-import { useWallet } from '../contexts/WalletContext';
+import { useWallet } from '../contexts/useWallet';
 import './ConnectWalletButton.css';
 
 export function ConnectWalletButton() {
