@@ -1,24 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
-import type { ProposalAnalysis, VotingRecommendation } from '../api/client';
+import type { DaoContracts, DaoProposal, ProposalAnalysis, VotingRecommendation } from '../api/client';
 import './ProposalCard.css';
-
-interface Proposal {
-    id: number;
-    title: string;
-    description: string;
-    proposer: string;
-    status: 'pending' | 'active' | 'passed' | 'rejected';
-    votesFor: number;
-    votesAgainst: number;
-}
+import './Modal.css';
+import { formatMicroStx, shortPrincipal } from '../utils/stx';
+import { useWallet } from '../contexts/useWallet';
+import { callContract } from '../stacks/tx';
 
 interface ProposalCardProps {
-    proposal: Proposal;
+    proposal: DaoProposal;
     daoAddress: string;
+    contracts: DaoContracts | null;
+    onTransactionSuccess?: () => void;
 }
 
-export function ProposalCard({ proposal, daoAddress }: ProposalCardProps) {
+export function ProposalCard({ proposal, daoAddress, contracts, onTransactionSuccess }: ProposalCardProps) {
+    const { userAddress, isConnected, connect } = useWallet();
     const [analysis, setAnalysis] = useState<ProposalAnalysis | null>(null);
     const [loading, setLoading] = useState(false);
     const [showVoteModal, setShowVoteModal] = useState(false);
@@ -26,6 +23,7 @@ export function ProposalCard({ proposal, daoAddress }: ProposalCardProps) {
     const [votingLoading, setVotingLoading] = useState(false);
     const [voteSubmitted, setVoteSubmitted] = useState(false);
     const [voteError, setVoteError] = useState<string | null>(null);
+    const [txId, setTxId] = useState<string | null>(null);
     const voteRequestIdRef = useRef(0);
 
     const statusColors: Record<string, string> = {
@@ -33,16 +31,21 @@ export function ProposalCard({ proposal, daoAddress }: ProposalCardProps) {
         active: 'info',
         passed: 'success',
         rejected: 'error',
+        expired: 'secondary',
+        unknown: 'secondary',
     };
 
-    const totalVotes = proposal.votesFor + proposal.votesAgainst;
-    const forPercent = totalVotes > 0 ? (proposal.votesFor / totalVotes) * 100 : 0;
+    const votesFor = BigInt(proposal.votes.for);
+    const votesAgainst = BigInt(proposal.votes.against);
+    const totalDecisive = votesFor + votesAgainst;
+    const forPercent =
+        totalDecisive > 0n ? Number((votesFor * 10_000n) / totalDecisive) / 100 : 0;
 
     const handleAnalyze = async () => {
         setLoading(true);
         try {
             const result = await api.analyzeProposal(daoAddress, {
-                id: proposal.id,
+                id: Number(proposal.id),
                 title: proposal.title,
                 description: proposal.description,
                 proposer: proposal.proposer,
@@ -61,16 +64,17 @@ export function ProposalCard({ proposal, daoAddress }: ProposalCardProps) {
         setVoteError(null);
         setVoteRecommendation(null);
         setVoteSubmitted(false);
+        setTxId(null);
         const requestId = ++voteRequestIdRef.current;
         try {
             // Get AI recommendation for this vote
             const recommendation = await api.getVotingRecommendation(daoAddress, {
-                id: proposal.id,
+                id: Number(proposal.id),
                 title: proposal.title,
                 description: proposal.description,
                 proposer: proposal.proposer,
-                votesFor: proposal.votesFor,
-                votesAgainst: proposal.votesAgainst,
+                votesFor: Number(proposal.votes.for),
+                votesAgainst: Number(proposal.votes.against),
             });
             if (requestId !== voteRequestIdRef.current) {
                 return;
@@ -89,16 +93,51 @@ export function ProposalCard({ proposal, daoAddress }: ProposalCardProps) {
         }
     };
 
-    const handleVote = (voteType: 'for' | 'against' | 'abstain') => {
-        // In a real app, this would call a smart contract
-        console.log(`Voting ${voteType} on proposal #${proposal.id}`);
-        setVoteSubmitted(true);
-        setTimeout(() => {
-            setShowVoteModal(false);
-            setVoteSubmitted(false);
-            setVoteRecommendation(null);
+    const handleVote = async (voteType: 'for' | 'against' | 'abstain') => {
+        try {
             setVoteError(null);
-        }, 2000);
+            setVotingLoading(true);
+
+            if (!contracts) {
+                setVoteError('DAO contracts are not loaded yet.');
+                return;
+            }
+
+            if (!isConnected) {
+                await connect();
+            }
+
+            const VOTE_FOR = 1;
+            const VOTE_AGAINST = 2;
+            const VOTE_ABSTAIN = 3;
+            const voteOption =
+                voteType === 'for' ? VOTE_FOR : voteType === 'against' ? VOTE_AGAINST : VOTE_ABSTAIN;
+
+            const { uintCV } = await import('@stacks/transactions');
+            const res = await callContract({
+                address: userAddress ?? undefined,
+                contract: contracts.voting,
+                functionName: 'vote',
+                functionArgs: [uintCV(BigInt(proposal.id)), uintCV(voteOption)],
+            });
+
+            setTxId(res.txid ?? null);
+            setVoteSubmitted(true);
+            onTransactionSuccess?.();
+
+            setTimeout(() => {
+                setShowVoteModal(false);
+                setVoteSubmitted(false);
+                setVoteRecommendation(null);
+                setVoteError(null);
+                setTxId(null);
+            }, 2000);
+        } catch (error) {
+            console.error(error);
+            setVoteError(error instanceof Error ? error.message : String(error));
+        } finally {
+            setVotingLoading(false);
+        }
     };
 
     const closeModal = () => {
@@ -106,6 +145,7 @@ export function ProposalCard({ proposal, daoAddress }: ProposalCardProps) {
         setVoteRecommendation(null);
         setVoteSubmitted(false);
         setVoteError(null);
+        setTxId(null);
         voteRequestIdRef.current += 1; // invalidate any in-flight request
     };
 
@@ -134,14 +174,18 @@ export function ProposalCard({ proposal, daoAddress }: ProposalCardProps) {
 
                 <h4 className="proposal-title">{proposal.title}</h4>
                 <p className="proposal-description">{proposal.description}</p>
+                <p className="proposal-meta">
+                    <span className="proposal-proposer">Proposer: {shortPrincipal(proposal.proposer)}</span>
+                    <span className="proposal-blocks">Voting: {proposal.startBlock} → {proposal.endBlock}</span>
+                </p>
 
                 <div className="proposal-votes">
                     <div className="votes-bar">
                         <div className="votes-for" style={{ width: `${forPercent}%` }}></div>
                     </div>
                     <div className="votes-labels">
-                        <span className="vote-for">👍 {proposal.votesFor}</span>
-                        <span className="vote-against">👎 {proposal.votesAgainst}</span>
+                        <span className="vote-for">👍 {formatMicroStx(proposal.votes.for)} STX</span>
+                        <span className="vote-against">👎 {formatMicroStx(proposal.votes.against)} STX</span>
                     </div>
                 </div>
 
@@ -199,7 +243,7 @@ export function ProposalCard({ proposal, daoAddress }: ProposalCardProps) {
                         {votingLoading && (
                             <div className="vote-loading">
                                 <span className="loader"></span>
-                                <p>Getting AI recommendation...</p>
+                                <p>Working...</p>
                             </div>
                         )}
 
@@ -220,18 +264,21 @@ export function ProposalCard({ proposal, daoAddress }: ProposalCardProps) {
                                     <button
                                         className="btn btn-success btn-large"
                                         onClick={() => handleVote('for')}
+                                        disabled={votingLoading}
                                     >
                                         👍 Vote FOR
                                     </button>
                                     <button
                                         className="btn btn-error btn-large"
                                         onClick={() => handleVote('against')}
+                                        disabled={votingLoading}
                                     >
                                         👎 Vote AGAINST
                                     </button>
                                     <button
                                         className="btn btn-secondary btn-large"
                                         onClick={() => handleVote('abstain')}
+                                        disabled={votingLoading}
                                     >
                                         🤷 Abstain
                                     </button>
@@ -252,6 +299,11 @@ export function ProposalCard({ proposal, daoAddress }: ProposalCardProps) {
                             <div className="vote-success fade-in">
                                 <span className="success-icon">✅</span>
                                 <p>Vote submitted successfully!</p>
+                                {txId && (
+                                    <p className="txid">
+                                        Tx: <code>{shortPrincipal(txId)}</code>
+                                    </p>
+                                )}
                             </div>
                         )}
                     </div>

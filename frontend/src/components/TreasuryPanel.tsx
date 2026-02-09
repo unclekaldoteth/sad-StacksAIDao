@@ -1,21 +1,22 @@
 import './TreasuryPanel.css';
+import type { DaoTreasurySpend } from '../api/client';
+import { formatMicroStx, shortPrincipal } from '../utils/stx';
 
 interface TreasuryPanelProps {
-    balance: number;
-    healthScore: number;
-    recentTransactions: {
-        amount: number;
-        recipient: string;
-        type: 'inflow' | 'outflow';
-        timestamp: string;
-    }[];
+    balanceMicroStx: string;
+    totalReceivedMicroStx: string;
+    totalSpentMicroStx: string;
+    healthScore?: number;
+    recentSpends: DaoTreasurySpend[];
     recommendations?: string[];
 }
 
 export function TreasuryPanel({
-    balance,
+    balanceMicroStx,
+    totalReceivedMicroStx,
+    totalSpentMicroStx,
     healthScore,
-    recentTransactions,
+    recentSpends,
     recommendations = []
 }: TreasuryPanelProps) {
     return (
@@ -31,7 +32,7 @@ export function TreasuryPanel({
             <div className="treasury-stats">
                 <div className="treasury-stat">
                     <span className="treasury-stat-label">Total Balance</span>
-                    <span className="treasury-stat-value">{balance.toLocaleString()} STX</span>
+                    <span className="treasury-stat-value">{formatMicroStx(balanceMicroStx)} STX</span>
                 </div>
                 <div className="treasury-stat">
                     <span className="treasury-stat-label">Health Score</span>
@@ -39,27 +40,47 @@ export function TreasuryPanel({
                         <div className="treasury-health-bar">
                             <div
                                 className="treasury-health-fill"
-                                style={{ width: `${healthScore}%` }}
+                                style={{ width: `${healthScore ?? 0}%` }}
                             ></div>
                         </div>
-                        <span className="health-value">{healthScore}/100</span>
+                        <span className="health-value">
+                            {typeof healthScore === 'number' ? `${healthScore}/100` : 'N/A'}
+                        </span>
                     </div>
+                </div>
+                <div className="treasury-stat">
+                    <span className="treasury-stat-label">Total Received</span>
+                    <span className="treasury-stat-value">{formatMicroStx(totalReceivedMicroStx)} STX</span>
+                </div>
+                <div className="treasury-stat">
+                    <span className="treasury-stat-label">Total Spent</span>
+                    <span className="treasury-stat-value">{formatMicroStx(totalSpentMicroStx)} STX</span>
                 </div>
             </div>
 
             <div className="treasury-transactions">
-                <h4>Recent Activity</h4>
+                <h4>Recent Spends</h4>
                 <ul className="transaction-list">
-                    {recentTransactions.map((tx, idx) => (
-                        <li key={idx} className={`transaction ${tx.type}`}>
-                            <span className="tx-icon">{tx.type === 'inflow' ? '↓' : '↑'}</span>
+                    {recentSpends.length === 0 && (
+                        <li className="transaction empty">
+                            <div className="tx-details">
+                                <span className="tx-recipient">No spends recorded yet</span>
+                            </div>
+                        </li>
+                    )}
+                    {recentSpends.map((tx) => (
+                        <li key={tx.spendId} className="transaction outflow">
+                            <span className="tx-icon">↑</span>
                             <div className="tx-details">
                                 <span className="tx-amount">
-                                    {tx.type === 'inflow' ? '+' : '-'}{tx.amount} STX
+                                    -{formatMicroStx(tx.amount)} STX
                                 </span>
-                                <span className="tx-recipient">{tx.recipient}</span>
+                                <span className="tx-recipient">
+                                    {shortPrincipal(tx.recipient)}
+                                    {tx.proposalId ? ` (proposal #${tx.proposalId})` : ''}
+                                </span>
                             </div>
-                            <span className="tx-time">{tx.timestamp}</span>
+                            <span className="tx-time">block {tx.spentAtBlock}</span>
                         </li>
                     ))}
                 </ul>
@@ -67,7 +88,7 @@ export function TreasuryPanel({
 
             {recommendations.length > 0 && (
                 <div className="treasury-recommendations">
-                    <h4>🤖 AI Recommendations</h4>
+                    <h4>AI Recommendations</h4>
                     <ul>
                         {recommendations.map((rec, idx) => (
                             <li key={idx}>{rec}</li>

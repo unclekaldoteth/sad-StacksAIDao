@@ -7,6 +7,13 @@ import { Router } from 'express';
 import { DAOAgent } from '../agents/dao-agent.js';
 import { getLLMProvider, ProviderFactory } from '../providers/index.js';
 import { config } from '../config/index.js';
+import {
+    fetchDaoOverview,
+    fetchDaoProposals,
+    fetchDaoTreasury,
+    fetchVotingPower,
+    getDaoConfig,
+} from '../stacks/dao-state.js';
 import { z } from 'zod';
 
 const router = Router();
@@ -88,6 +95,107 @@ router.get('/provider', async (_req, res) => {
             model: provider.getModel(),
             available,
         });
+    } catch (error) {
+        res.status(500).json({ error: String(error) });
+    }
+});
+
+/**
+ * DAO Config (contracts + network)
+ */
+router.get('/dao/config', (_req, res) => {
+    try {
+        res.json(getDaoConfig());
+    } catch (error) {
+        res.status(500).json({ error: String(error) });
+    }
+});
+
+/**
+ * DAO Overview (DAO core + counts + treasury stats)
+ */
+router.get('/dao/overview', async (_req, res) => {
+    try {
+        const overview = await fetchDaoOverview();
+        res.json(overview);
+    } catch (error) {
+        res.status(500).json({ error: String(error) });
+    }
+});
+
+/**
+ * DAO Proposals (optionally limit to the last N)
+ */
+router.get('/dao/proposals', async (req, res) => {
+    const querySchema = z.object({
+        limit: z
+            .string()
+            .optional()
+            .transform((v) => (v ? Number(v) : undefined))
+            .refine((v) => v === undefined || (Number.isFinite(v) && v > 0), {
+                message: 'limit must be a positive number',
+            }),
+    });
+
+    const parsed = querySchema.safeParse(req.query);
+    if (!parsed.success) {
+        res.status(400).json({ error: 'Invalid query params', details: parsed.error.flatten() });
+        return;
+    }
+
+    try {
+        const data = await fetchDaoProposals({ limit: parsed.data.limit });
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: String(error) });
+    }
+});
+
+/**
+ * DAO Treasury (stats + recent spends)
+ */
+router.get('/dao/treasury', async (req, res) => {
+    const querySchema = z.object({
+        recentSpendsLimit: z
+            .string()
+            .optional()
+            .transform((v) => (v ? Number(v) : undefined))
+            .refine((v) => v === undefined || (Number.isFinite(v) && v > 0), {
+                message: 'recentSpendsLimit must be a positive number',
+            }),
+    });
+
+    const parsed = querySchema.safeParse(req.query);
+    if (!parsed.success) {
+        res.status(400).json({ error: 'Invalid query params', details: parsed.error.flatten() });
+        return;
+    }
+
+    try {
+        const data = await fetchDaoTreasury({ recentSpendsLimit: parsed.data.recentSpendsLimit });
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: String(error) });
+    }
+});
+
+/**
+ * Voting power for an address (governance-token)
+ */
+router.get('/dao/voting-power', async (req, res) => {
+    const querySchema = z.object({
+        address: z.string().min(1),
+    });
+
+    const parsed = querySchema.safeParse(req.query);
+    if (!parsed.success) {
+        res.status(400).json({ error: 'Invalid query params', details: parsed.error.flatten() });
+        return;
+    }
+
+    try {
+        const data = await fetchVotingPower(parsed.data.address);
+        res.json(data);
     } catch (error) {
         res.status(500).json({ error: String(error) });
     }

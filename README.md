@@ -17,8 +17,8 @@ This repository contains three coordinated packages:
 ## How the Packages Fit Together
 
 1. `dao-factory` defines on-chain governance behavior and treasury logic in Clarity.
-2. `backend` provides AI-assisted analysis and chat endpoints that are DAO-focused.
-3. `frontend` presents proposals and assistant interactions, and calls backend endpoints over HTTP.
+2. `backend` provides AI-assisted analysis and chat endpoints and also exposes read-only on-chain DAO state endpoints (`/api/dao/*`).
+3. `frontend` presents proposals and assistant interactions, consumes `/api/dao/*` for real on-chain state, and uses wallet transactions for voting/proposals.
 4. DAO contract state and identities can be passed through API payloads (for example `daoAddress`) so off-chain assistant logic can stay context-aware.
 
 ## Architecture Diagram

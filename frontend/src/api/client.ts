@@ -2,6 +2,8 @@
  * API Client for DAO AI Agent
  */
 
+import type { ContractIdString } from '@stacks/transactions';
+
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export interface Proposal {
@@ -42,6 +44,94 @@ export interface HealthStatus {
     stacks: { network: string; deployer: string };
 }
 
+export type DaoContracts = {
+    core: ContractIdString;
+    proposals: ContractIdString;
+    voting: ContractIdString;
+    treasury: ContractIdString;
+    treasuryActions: ContractIdString;
+    governanceToken: ContractIdString;
+    membership: ContractIdString;
+    extensionsRegistry: ContractIdString;
+    templateRegistry: ContractIdString;
+    factory: ContractIdString;
+};
+
+export interface DaoConfig {
+    network: string;
+    stacksApiUrl: string;
+    deployerAddress: string;
+    contracts: DaoContracts;
+}
+
+export interface DaoOverview {
+    dao: {
+        name: string;
+        description: string;
+    };
+    counts: {
+        members: string;
+        proposals: string;
+    };
+    treasury: {
+        stxBalance: string;
+        totalReceived: string;
+        totalSpent: string;
+        spendCount: string;
+    };
+}
+
+export type DaoProposalStatus = 'pending' | 'active' | 'passed' | 'rejected' | 'expired' | 'unknown';
+
+export interface DaoProposal {
+    id: string;
+    title: string;
+    description: string;
+    proposer: string;
+    status: DaoProposalStatus;
+    createdAtBlock: string;
+    startBlock: string;
+    endBlock: string;
+    proposalContract: string | null;
+    votes: {
+        for: string;
+        against: string;
+        abstain: string;
+        total: string;
+        voterCount: string;
+    };
+}
+
+export interface DaoProposalsResponse {
+    proposals: DaoProposal[];
+}
+
+export interface DaoTreasurySpend {
+    spendId: string;
+    asset: 'STX' | 'UNKNOWN';
+    amount: string;
+    recipient: string;
+    proposalId: string | null;
+    spentAtBlock: string;
+    spentBy: string;
+}
+
+export interface DaoTreasuryResponse {
+    stats: {
+        stxBalance: string;
+        totalReceived: string;
+        totalSpent: string;
+        spendCount: string;
+    };
+    recentSpends: DaoTreasurySpend[];
+}
+
+export interface DaoVotingPower {
+    address: string;
+    votingPower: string;
+    totalVotingPower: string;
+}
+
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const res = await fetch(`${API_BASE}${endpoint}`, {
         ...options,
@@ -74,6 +164,16 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
 
 export const api = {
     health: () => request<HealthStatus>('/api/health'),
+    daoConfig: () => request<DaoConfig>('/api/dao/config'),
+    daoOverview: () => request<DaoOverview>('/api/dao/overview'),
+    daoProposals: (limit?: number) =>
+        request<DaoProposalsResponse>(`/api/dao/proposals${limit ? `?limit=${limit}` : ''}`),
+    daoTreasury: (recentSpendsLimit?: number) =>
+        request<DaoTreasuryResponse>(
+            `/api/dao/treasury${recentSpendsLimit ? `?recentSpendsLimit=${recentSpendsLimit}` : ''}`
+        ),
+    daoVotingPower: (address: string) =>
+        request<DaoVotingPower>(`/api/dao/voting-power?address=${encodeURIComponent(address)}`),
 
     analyzeProposal: (daoAddress: string, proposal: Proposal) =>
         request<ProposalAnalysis>('/api/analyze-proposal', {

@@ -33,6 +33,18 @@
   color: var(--text-primary);
 }
 
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.section-header h2 {
+  margin: 0;
+}
+
 .section-subtitle {
   color: var(--text-muted);
   font-size: 0.9rem;

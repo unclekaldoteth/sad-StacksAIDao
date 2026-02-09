@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import './App.css';
 import { Header } from './components/Header';
 import { StatsCards } from './components/StatsCards';
@@ -6,64 +6,92 @@ import { ProposalCard } from './components/ProposalCard';
 import { AIChat } from './components/AIChat';
 import { AIAgentCards } from './components/AIAgentCards';
 import { TreasuryPanel } from './components/TreasuryPanel';
+import { CreateProposalModal } from './components/CreateProposalModal';
 import { api } from './api/client';
-import type { HealthStatus } from './api/client';
-
-// Demo data
-const DAO_ADDRESS = 'ST1ZGGS886YCZHMFXJR1EK61ZP34FNWNSX28M1PMM';
-
-const DEMO_PROPOSALS = [
-  {
-    id: 1,
-    title: 'Fund Community Development Initiative',
-    description: 'Allocate 5,000 STX for community outreach, developer workshops, and educational content creation.',
-    proposer: 'ST1ABC...XYZ',
-    status: 'active' as const,
-    votesFor: 12500,
-    votesAgainst: 3200,
-  },
-  {
-    id: 2,
-    title: 'Upgrade Governance Smart Contracts',
-    description: 'Deploy v2 of governance contracts with improved voting mechanisms and delegation support.',
-    proposer: 'ST2DEF...UVW',
-    status: 'pending' as const,
-    votesFor: 0,
-    votesAgainst: 0,
-  },
-  {
-    id: 3,
-    title: 'Partnership with DeFi Protocol',
-    description: 'Establish strategic partnership for liquidity provision and cross-protocol integrations.',
-    proposer: 'ST3GHI...RST',
-    status: 'passed' as const,
-    votesFor: 45000,
-    votesAgainst: 8000,
-  },
-];
-
-const DEMO_TRANSACTIONS = [
-  { amount: 10000, recipient: 'Developer Fund', type: 'outflow' as const, timestamp: '2h ago' },
-  { amount: 50000, recipient: 'Token Sale', type: 'inflow' as const, timestamp: '1d ago' },
-  { amount: 2500, recipient: 'Marketing Budget', type: 'outflow' as const, timestamp: '3d ago' },
-];
-
-const TREASURY_RECOMMENDATIONS = [
-  'Consider diversifying treasury with stablecoins for reduced volatility',
-  'Current burn rate suggests 18-month runway - healthy position',
-  'Large pending proposal (#1) would reduce runway to 14 months',
-];
+import type {
+  DaoConfig,
+  DaoOverview,
+  DaoProposal,
+  DaoTreasuryResponse,
+  DaoVotingPower,
+  HealthStatus,
+  TreasuryInsight,
+} from './api/client';
+import { useWallet } from './contexts/useWallet';
+import { formatMicroStx, shortPrincipal } from './utils/stx';
 
 function App() {
+  const { userAddress } = useWallet();
   const [health, setHealth] = useState<HealthStatus | null>(null);
+  const [daoConfig, setDaoConfig] = useState<DaoConfig | null>(null);
+  const [overview, setOverview] = useState<DaoOverview | null>(null);
+  const [proposals, setProposals] = useState<DaoProposal[]>([]);
+  const [treasury, setTreasury] = useState<DaoTreasuryResponse | null>(null);
+  const [treasuryInsight, setTreasuryInsight] = useState<TreasuryInsight | null>(null);
+  const [votingPower, setVotingPower] = useState<DaoVotingPower | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [showCreateProposal, setShowCreateProposal] = useState(false);
 
   useEffect(() => {
-    api.health()
-      .then(setHealth)
-      .catch(console.error)
+    Promise.all([
+      api.health(),
+      api.daoConfig(),
+      api.daoOverview(),
+      api.daoProposals(50),
+      api.daoTreasury(10),
+    ])
+      .then(([healthRes, configRes, overviewRes, proposalsRes, treasuryRes]) => {
+        setHealth(healthRes);
+        setDaoConfig(configRes);
+        setOverview(overviewRes);
+        setProposals(proposalsRes.proposals);
+        setTreasury(treasuryRes);
+
+        // Optional: ask the AI for treasury recommendations based on live on-chain data.
+        // This is intentionally "best effort" and should not block the dashboard.
+        const daoAddress = configRes.contracts.core;
+        const recentTransactions = treasuryRes.recentSpends.slice(0, 10).map((s) => ({
+          amount: Number(s.amount),
+          recipient: s.recipient,
+          timestamp: Number(s.spentAtBlock),
+        }));
+        void api
+          .analyzeTreasury(daoAddress, {
+            balance: Number(treasuryRes.stats.stxBalance),
+            recentTransactions,
+          })
+          .then(setTreasuryInsight)
+          .catch(() => setTreasuryInsight(null));
+      })
+      .catch((err) => {
+        console.error(err);
+        setLoadError(err instanceof Error ? err.message : String(err));
+      })
       .finally(() => setLoading(false));
   }, []);
+
+  const refreshProposals = () => {
+    void api
+      .daoProposals(50)
+      .then((res) => setProposals(res.proposals))
+      .catch(console.error);
+  };
+
+  useEffect(() => {
+    if (!userAddress) return;
+    void api
+      .daoVotingPower(userAddress)
+      .then(setVotingPower)
+      .catch(() => setVotingPower(null));
+  }, [userAddress]);
+
+  const daoTitle = useMemo(() => {
+    const name = overview?.dao.name?.trim();
+    return name && name.length > 0 ? name : 'Stacks AI DAO';
+  }, [overview?.dao.name]);
+
+  const daoAddress = daoConfig?.contracts.core ?? '';
 
   if (loading) {
     return (
@@ -74,11 +102,20 @@ function App() {
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="loading-screen">
+        <p>Failed to load dashboard:</p>
+        <code style={{ maxWidth: 720, whiteSpace: 'pre-wrap', textAlign: 'left' }}>{loadError}</code>
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <Header
-        daoName="Stacks AI DAO"
-        network={health?.stacks.network || 'testnet'}
+        daoName={daoTitle}
+        network={daoConfig?.network || health?.stacks.network || 'testnet'}
         llmAvailable={health?.llm.available}
       />
 
@@ -87,10 +124,14 @@ function App() {
         <section className="section">
           <h2>Dashboard</h2>
           <StatsCards
-            treasuryBalance={125000}
-            proposalCount={3}
-            memberCount={156}
-            healthScore={85}
+            treasuryBalanceStx={formatMicroStx(overview?.treasury.stxBalance ?? '0')}
+            proposalCount={Number(overview?.counts.proposals ?? 0)}
+            memberCount={Number(overview?.counts.members ?? 0)}
+            healthScore={treasuryInsight?.healthScore}
+            userVotingPowerStx={
+              votingPower ? formatMicroStx(votingPower.votingPower) : null
+            }
+            userAddress={userAddress ? shortPrincipal(userAddress) : null}
           />
         </section>
 
@@ -107,31 +148,52 @@ function App() {
         <div className="dashboard-grid three-column">
           {/* Proposals Section - connected to Proposal Analyzer & Vote Recommender */}
           <section className="section proposals-section">
-            <h2>📜 Proposals</h2>
+            <div className="section-header">
+              <h2>📜 Proposals</h2>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowCreateProposal(true)}
+                disabled={!daoConfig}
+                title={!daoConfig ? 'Loading DAO config...' : 'Create a new on-chain proposal'}
+              >
+                New Proposal
+              </button>
+            </div>
             <div className="proposals-list">
-              {DEMO_PROPOSALS.map((proposal) => (
+              {proposals.map((proposal) => (
                 <ProposalCard
                   key={proposal.id}
                   proposal={proposal}
-                  daoAddress={DAO_ADDRESS}
+                  daoAddress={daoAddress}
+                  contracts={daoConfig?.contracts ?? null}
+                  onTransactionSuccess={refreshProposals}
                 />
               ))}
+              {proposals.length === 0 && (
+                <div className="card" style={{ padding: '1.25rem' }}>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+                    No proposals found yet.
+                  </p>
+                </div>
+              )}
             </div>
           </section>
 
           {/* Treasury Section - connected to Treasury Advisor */}
           <section className="section treasury-section">
             <TreasuryPanel
-              balance={125000}
-              healthScore={85}
-              recentTransactions={DEMO_TRANSACTIONS}
-              recommendations={TREASURY_RECOMMENDATIONS}
+              balanceMicroStx={treasury?.stats.stxBalance ?? '0'}
+              totalReceivedMicroStx={treasury?.stats.totalReceived ?? '0'}
+              totalSpentMicroStx={treasury?.stats.totalSpent ?? '0'}
+              healthScore={treasuryInsight?.healthScore}
+              recentSpends={treasury?.recentSpends ?? []}
+              recommendations={treasuryInsight?.recommendations ?? []}
             />
           </section>
 
           {/* Chat Section - connected to Risk Scanner for queries */}
           <section className="section chat-section">
-            <AIChat daoAddress={DAO_ADDRESS} />
+            <AIChat daoAddress={daoAddress} />
           </section>
         </div>
       </main>
@@ -141,6 +203,17 @@ function App() {
           <p>DAO Factory • Powered by AI • Built on Stacks</p>
         </div>
       </footer>
+
+      <CreateProposalModal
+        open={showCreateProposal}
+        daoAddress={daoAddress}
+        contracts={daoConfig?.contracts ?? null}
+        onClose={() => setShowCreateProposal(false)}
+        onCreated={() => {
+          setShowCreateProposal(false);
+          refreshProposals();
+        }}
+      />
     </div>
   );
 }

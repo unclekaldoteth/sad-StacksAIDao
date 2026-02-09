@@ -36,6 +36,11 @@ app.get('/', (_req, res) => {
         endpoints: [
             'GET  /api/health',
             'GET  /api/provider',
+            'GET  /api/dao/config',
+            'GET  /api/dao/overview',
+            'GET  /api/dao/proposals',
+            'GET  /api/dao/treasury',
+            'GET  /api/dao/voting-power?address=ST...',
             'POST /api/analyze-proposal',
             'POST /api/voting-recommendation',
             'POST /api/analyze-treasury',
