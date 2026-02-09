@@ -1,3 +1,4 @@
+import { ConnectWalletButton } from './ConnectWalletButton';
 import './Header.css';
 
 interface HeaderProps {
@@ -32,7 +33,12 @@ export function Header({ daoAddress, network, llmProvider, llmAvailable }: Heade
                         <code className="status-address">{shortAddress}</code>
                     </div>
                 </div>
+
+                <div className="header-wallet">
+                    <ConnectWalletButton />
+                </div>
             </div>
         </header>
     );
 }
+

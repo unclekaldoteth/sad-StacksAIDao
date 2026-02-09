@@ -91,4 +91,12 @@
     .header-status {
         display: none;
     }
+
+    .header-wallet {
+        margin-left: auto;
+    }
+}
+
+.header-wallet {
+    margin-left: 1.5rem;
 }
