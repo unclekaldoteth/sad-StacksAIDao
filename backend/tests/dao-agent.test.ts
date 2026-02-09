@@ -279,6 +279,32 @@ describe('DAOAgent.getVotingRecommendation', () => {
         expect(result.vote).toBe('abstain');
         expect(result.confidence).toBe(0);
     });
+
+    it('includes proposal context fields when provided', async () => {
+        mockComplete.mockResolvedValue({
+            content: JSON.stringify({
+                vote: 'for',
+                confidence: 55,
+                reasoning: 'Test',
+            }),
+        });
+
+        const agent = new DAOAgent('ST1TEST');
+        await agent.getVotingRecommendation({
+            id: 6,
+            title: 'Context Proposal',
+            description: 'Proposal with extra fields',
+            proposer: 'ST1ALICE',
+            votesFor: 10,
+            votesAgainst: 2,
+        });
+
+        const call = mockComplete.mock.calls[0]?.[0];
+        expect(call).toBeDefined();
+        expect(call.messages[1].content).toContain('Proposer: ST1ALICE');
+        expect(call.messages[1].content).toContain('Votes For: 10');
+        expect(call.messages[1].content).toContain('Votes Against: 2');
+    });
 });
 
 // ===========================================

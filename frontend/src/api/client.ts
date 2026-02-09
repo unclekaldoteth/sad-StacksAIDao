@@ -83,7 +83,11 @@ export const api = {
 
     getVotingRecommendation: (
         daoAddress: string,
-        proposal: Pick<Proposal, 'id' | 'title' | 'description'>,
+        proposal: Pick<Proposal, 'id' | 'title' | 'description'> & {
+            proposer?: string;
+            votesFor?: number;
+            votesAgainst?: number;
+        },
         userPreferences?: string
     ) =>
         request<VotingRecommendation>('/api/voting-recommendation', {

@@ -206,6 +206,23 @@ describe('API Routes', () => {
             expect(res.body.confidence).toBeTypeOf('number');
         });
 
+        it('accepts additional proposal context fields', async () => {
+            const res = await request(app, 'POST', '/api/voting-recommendation', {
+                daoAddress: 'ST1TEST',
+                proposal: {
+                    id: 10,
+                    title: 'Context Proposal',
+                    description: 'Proposal with extra metadata',
+                    proposer: 'ST1ALICE',
+                    votesFor: 12,
+                    votesAgainst: 3,
+                },
+            });
+
+            expect(res.status).toBe(200);
+            expect(res.body.proposalId).toBe(10);
+        });
+
         it('accepts optional userPreferences', async () => {
             const res = await request(app, 'POST', '/api/voting-recommendation', {
                 daoAddress: 'ST1TEST',

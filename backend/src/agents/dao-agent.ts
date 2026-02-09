@@ -186,7 +186,14 @@ Respond in this JSON format:
      * Get voting recommendation based on user preferences
      */
     async getVotingRecommendation(
-        proposal: { id: number; title: string; description: string },
+        proposal: {
+            id: number;
+            title: string;
+            description: string;
+            proposer?: string;
+            votesFor?: number;
+            votesAgainst?: number;
+        },
         userPreferences?: string
     ): Promise<VotingRecommendation> {
         const llm = getLLMProvider();
@@ -201,6 +208,9 @@ Respond in this JSON format:
 Proposal ID: ${proposal.id}
 Title: ${proposal.title}
 Description: ${proposal.description}
+${proposal.proposer ? `Proposer: ${proposal.proposer}` : ''}
+${proposal.votesFor !== undefined ? `Votes For: ${proposal.votesFor}` : ''}
+${proposal.votesAgainst !== undefined ? `Votes Against: ${proposal.votesAgainst}` : ''}
 ${userPreferences ? `User Preferences: ${userPreferences}` : ''}
 
 Respond in this JSON format:

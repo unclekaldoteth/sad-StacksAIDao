@@ -28,6 +28,9 @@ const votingRecommendationSchema = z.object({
         id: z.number(),
         title: z.string().min(1),
         description: z.string().min(1),
+        proposer: z.string().min(1).optional(),
+        votesFor: z.number().nonnegative().optional(),
+        votesAgainst: z.number().nonnegative().optional(),
     }),
     userPreferences: z.string().optional(),
 });

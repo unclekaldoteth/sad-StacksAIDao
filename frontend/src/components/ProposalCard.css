@@ -116,3 +116,163 @@
 .analysis-points li {
     margin-bottom: 0.25rem;
 }
+
+/* Vote Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    max-width: 500px;
+    width: 90%;
+    position: relative;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    transition: color 0.2s ease;
+}
+
+.modal-close:hover {
+    color: var(--text-primary);
+}
+
+.vote-modal h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+}
+
+.modal-proposal-title {
+    color: var(--text-secondary);
+    margin: 0 0 1.5rem 0;
+    font-size: 0.95rem;
+}
+
+.vote-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 2rem 0;
+}
+
+.vote-loading p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.vote-recommendation {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.recommendation-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.recommendation-label {
+    font-weight: 600;
+    color: var(--accent-secondary);
+}
+
+.confidence {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-left: auto;
+}
+
+.recommendation-reasoning {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin: 0;
+    padding: 1rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+}
+
+.vote-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.vote-buttons .btn {
+    flex: 1 1 140px;
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--success), #059669);
+}
+
+.btn-error {
+    background: linear-gradient(135deg, var(--error), #dc2626);
+}
+
+.btn-large {
+    font-weight: 600;
+}
+
+.vote-error {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem 0 0 0;
+}
+
+.vote-error p {
+    margin: 0;
+    color: var(--error);
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+}
+
+.vote-success {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 2rem 0;
+}
+
+.success-icon {
+    font-size: 3rem;
+}
+
+.vote-success p {
+    color: var(--success);
+    font-weight: 600;
+    margin: 0;
+}
