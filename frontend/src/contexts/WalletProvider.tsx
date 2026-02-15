@@ -17,6 +17,14 @@ type ConnectStorageData = {
     version?: string;
 };
 
+function isAddressForNetwork(address: string, networkName: 'mainnet' | 'testnet'): boolean {
+    const normalized = address.toUpperCase();
+    if (networkName === 'mainnet') {
+        return normalized.startsWith('SP');
+    }
+    return normalized.startsWith('ST');
+}
+
 function readConnectStorage(): ConnectStorageData | null {
     if (typeof window === 'undefined') {
         return null;
@@ -39,14 +47,23 @@ function readConnectStorage(): ConnectStorageData | null {
     }
 }
 
-function getPrimaryStxAddress(data: ConnectStorageData | null): string | null {
-    const address = data?.addresses?.stx?.[0]?.address;
-    return typeof address === 'string' && address.length > 0 ? address : null;
+function getPrimaryStxAddress(
+    data: ConnectStorageData | null,
+    networkName: 'mainnet' | 'testnet'
+): string | null {
+    const candidates = data?.addresses?.stx ?? [];
+    const matching = candidates.find(
+        (entry) => typeof entry?.address === 'string' && isAddressForNetwork(entry.address, networkName)
+    );
+    if (!matching?.address) {
+        return null;
+    }
+    return matching.address;
 }
 
 export function WalletProvider({ children }: WalletProviderProps) {
     const initialConnectData = readConnectStorage();
-    const initialAddress = getPrimaryStxAddress(initialConnectData);
+    const initialAddress = getPrimaryStxAddress(initialConnectData, stacksNetworkName);
 
     const [isConnected, setIsConnected] = useState(() => Boolean(initialAddress));
     const [isConnecting, setIsConnecting] = useState(false);
@@ -54,7 +71,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
 
     const refreshFromStorage = useCallback(() => {
         const data = readConnectStorage();
-        const address = getPrimaryStxAddress(data);
+        const address = getPrimaryStxAddress(data, stacksNetworkName);
         setUserAddress(address);
         setIsConnected(Boolean(address));
     }, []);

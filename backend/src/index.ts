@@ -40,7 +40,7 @@ app.get('/', (_req, res) => {
             'GET  /api/dao/overview',
             'GET  /api/dao/proposals',
             'GET  /api/dao/treasury',
-            'GET  /api/dao/voting-power?address=ST...',
+            'GET  /api/dao/voting-power?address=<stacks-principal>',
             'POST /api/analyze-proposal',
             'POST /api/voting-recommendation',
             'POST /api/analyze-treasury',

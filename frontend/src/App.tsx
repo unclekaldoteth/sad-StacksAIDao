@@ -21,6 +21,7 @@ import type {
   TreasuryInsight,
 } from './api/client';
 import { useWallet } from './contexts/useWallet';
+import { stacksNetworkName } from './contexts/stacks';
 import { formatMicroStx, shortPrincipal } from './utils/stx';
 
 function App() {
@@ -175,7 +176,7 @@ function App() {
     <div className="app">
       <Header
         daoName={daoTitle}
-        network={daoConfig?.network || health?.stacks.network || 'testnet'}
+        network={daoConfig?.network || health?.stacks.network || stacksNetworkName}
         llmAvailable={health?.llm.available}
         daoOptions={daoRegistry?.daos.map((d) => ({ id: d.daoId, name: d.name })) ?? []}
         selectedDaoId={selectedDaoId}
