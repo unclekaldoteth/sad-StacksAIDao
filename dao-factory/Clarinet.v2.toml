@@ -1,0 +1,77 @@
+[project]
+name = "dao-factory-v2"
+description = "Versioned DAO contracts for mainnet redeploy"
+authors = []
+telemetry = false
+cache_dir = "./.cache"
+
+# Core DAO Contracts
+[contracts.dao-traits-v2]
+path = "contracts/dao-traits-v2.clar"
+epoch = "3.0"
+
+[contracts.dao-core-v2]
+path = "contracts/dao-core-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-traits-v2"]
+
+[contracts.membership-v2]
+path = "contracts/membership-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2"]
+
+[contracts.extensions-registry-v2]
+path = "contracts/extensions-registry-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2"]
+
+# Governance Contracts
+[contracts.governance-token-v2]
+path = "contracts/governance-token-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2"]
+
+[contracts.proposal-submission-v2]
+path = "contracts/proposal-submission-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2"]
+
+[contracts.proposal-voting-v2]
+path = "contracts/proposal-voting-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2", "proposal-submission-v2", "governance-token-v2"]
+
+# Treasury Contracts
+[contracts.treasury-v2]
+path = "contracts/treasury-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2"]
+
+[contracts.treasury-actions-v2]
+path = "contracts/treasury-actions-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2", "treasury-v2"]
+
+# Test Helper Contracts
+[contracts.mock-proposal-v2]
+path = "contracts/mock-proposal-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-traits-v2"]
+
+[contracts.test-executor-v2]
+path = "contracts/test-executor-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2", "dao-traits-v2"]
+
+# Factory Contracts
+[contracts.dao-factory-v2]
+path = "contracts/dao-factory-v2.clar"
+epoch = "3.0"
+
+[contracts.template-registry-v2]
+path = "contracts/template-registry-v2.clar"
+epoch = "3.0"
+
+[repl.analysis]
+passes = ["check_checker"]
+check_checker = { trusted_sender = true, trusted_caller = true, callee_filter = true }

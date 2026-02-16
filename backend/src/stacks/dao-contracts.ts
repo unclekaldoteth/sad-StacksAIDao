@@ -11,18 +11,24 @@ export type DaoContracts = {
     factory: string;
 };
 
+const CONTRACT_SUFFIX = '-v2';
+
+function withSuffix(baseName: string): string {
+    return `${baseName}${CONTRACT_SUFFIX}`;
+}
+
 export function buildDaoContracts(deployerAddress: string): DaoContracts {
     return {
-        core: `${deployerAddress}.dao-core`,
-        proposals: `${deployerAddress}.proposal-submission`,
-        voting: `${deployerAddress}.proposal-voting`,
-        treasury: `${deployerAddress}.treasury`,
-        treasuryActions: `${deployerAddress}.treasury-actions`,
-        governanceToken: `${deployerAddress}.governance-token`,
-        membership: `${deployerAddress}.membership`,
-        extensionsRegistry: `${deployerAddress}.extensions-registry`,
-        templateRegistry: `${deployerAddress}.template-registry`,
-        factory: `${deployerAddress}.dao-factory`,
+        core: `${deployerAddress}.${withSuffix('dao-core')}`,
+        proposals: `${deployerAddress}.${withSuffix('proposal-submission')}`,
+        voting: `${deployerAddress}.${withSuffix('proposal-voting')}`,
+        treasury: `${deployerAddress}.${withSuffix('treasury')}`,
+        treasuryActions: `${deployerAddress}.${withSuffix('treasury-actions')}`,
+        governanceToken: `${deployerAddress}.${withSuffix('governance-token')}`,
+        membership: `${deployerAddress}.${withSuffix('membership')}`,
+        extensionsRegistry: `${deployerAddress}.${withSuffix('extensions-registry')}`,
+        templateRegistry: `${deployerAddress}.${withSuffix('template-registry')}`,
+        factory: `${deployerAddress}.${withSuffix('dao-factory')}`,
     };
 }
 
@@ -33,4 +39,3 @@ export function splitContractId(contractId: string): { contractAddress: string; 
     }
     return { contractAddress: parts[0], contractName: parts[1] };
 }
-

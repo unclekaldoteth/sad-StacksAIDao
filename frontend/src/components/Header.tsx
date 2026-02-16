@@ -4,6 +4,7 @@ import './Header.css';
 interface HeaderProps {
     daoName?: string;
     network: string;
+    contractSetLabel?: string;
     llmAvailable?: boolean;
     daoOptions?: { id: string; name: string }[];
     selectedDaoId?: string;
@@ -13,6 +14,7 @@ interface HeaderProps {
 export function Header({
     daoName = 'Stacks AI DAO',
     network,
+    contractSetLabel,
     llmAvailable,
     daoOptions = [],
     selectedDaoId,
@@ -46,7 +48,12 @@ export function Header({
                             <span className="logo-text">{daoName}</span>
                         )}
                     </div>
-                    <span className="badge badge-info">{network}</span>
+                    <div className="header-badges">
+                        <span className="badge badge-info">{network}</span>
+                        {contractSetLabel ? (
+                            <span className="badge badge-success">{contractSetLabel}</span>
+                        ) : null}
+                    </div>
                 </div>
 
                 <div className="header-status">

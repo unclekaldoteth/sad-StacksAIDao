@@ -20,6 +20,12 @@
     gap: 1rem;
 }
 
+.header-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 .logo {
     display: flex;
     align-items: center;
@@ -119,6 +125,10 @@
 
     .dao-select {
         min-width: 200px;
+    }
+
+    .header-badges {
+        display: none;
     }
 }
 

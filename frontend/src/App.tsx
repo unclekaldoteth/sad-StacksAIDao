@@ -24,6 +24,13 @@ import { useWallet } from './contexts/useWallet';
 import { stacksNetworkName } from './contexts/stacks';
 import { formatMicroStx, shortPrincipal } from './utils/stx';
 
+function shortContractId(contractId: string): string {
+  if (contractId.length <= 40) {
+    return contractId;
+  }
+  return `${contractId.slice(0, 24)}...${contractId.slice(-12)}`;
+}
+
 function App() {
   const { userAddress } = useWallet();
   const [health, setHealth] = useState<HealthStatus | null>(null);
@@ -152,6 +159,12 @@ function App() {
     return name && name.length > 0 ? name : 'Stacks AI DAO';
   }, [overview?.dao.name]);
 
+  const contractSetLabel = useMemo(() => {
+    const core = daoConfig?.contracts.core ?? '';
+    if (!core) return undefined;
+    return core.endsWith('.dao-core-v2') ? 'Contracts v2' : 'Contracts legacy';
+  }, [daoConfig?.contracts.core]);
+
   const daoAddress = daoConfig?.contracts.core ?? '';
 
   if (loading) {
@@ -177,6 +190,7 @@ function App() {
       <Header
         daoName={daoTitle}
         network={daoConfig?.network || health?.stacks.network || stacksNetworkName}
+        contractSetLabel={contractSetLabel}
         llmAvailable={health?.llm.available}
         daoOptions={daoRegistry?.daos.map((d) => ({ id: d.daoId, name: d.name })) ?? []}
         selectedDaoId={selectedDaoId}
@@ -187,6 +201,30 @@ function App() {
       />
 
       <main className="main container">
+        {daoConfig ? (
+          <section className="section">
+            <div className="card contract-debug">
+              <div className="contract-debug-header">
+                <h3>On-Chain Contract Set</h3>
+                <span className="badge badge-success">{contractSetLabel ?? 'Contracts'}</span>
+              </div>
+              <p className="contract-debug-copy">
+                Active contract IDs loaded from backend configuration.
+              </p>
+              <div className="contract-debug-grid">
+                <span>Factory</span>
+                <code>{shortContractId(daoConfig.contracts.factory)}</code>
+                <span>Core</span>
+                <code>{shortContractId(daoConfig.contracts.core)}</code>
+                <span>Voting</span>
+                <code>{shortContractId(daoConfig.contracts.voting)}</code>
+                <span>Treasury</span>
+                <code>{shortContractId(daoConfig.contracts.treasury)}</code>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
         {/* Dashboard Stats */}
         <section className="section">
           <h2>Dashboard</h2>

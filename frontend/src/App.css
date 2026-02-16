@@ -51,6 +51,53 @@
   margin: -0.5rem 0 1.5rem 0;
 }
 
+.contract-debug {
+  padding: 1rem 1.25rem;
+}
+
+.contract-debug-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+.contract-debug-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.contract-debug-copy {
+  margin: 0 0 0.8rem 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.contract-debug-grid {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 0.4rem 0.75rem;
+  align-items: center;
+}
+
+.contract-debug-grid span {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.contract-debug-grid code {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.2rem 0.45rem;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
 /* Three column layout for main content */
 .dashboard-grid.three-column {
   display: grid;
@@ -111,5 +158,9 @@
   .chat-section,
   .treasury-section {
     position: static;
+  }
+
+  .contract-debug-grid {
+    grid-template-columns: 1fr;
   }
 }

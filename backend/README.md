@@ -2,6 +2,22 @@
 
 AI-powered governance agent for the DAO Factory.
 
+## Current On-Chain Target (Mainnet)
+
+- Deployer: `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK`
+- Contract set: `-v2`
+- Backend contract resolver (`buildDaoContracts`) now defaults to:
+  - `${DAO_DEPLOYER_ADDRESS}.dao-core-v2`
+  - `${DAO_DEPLOYER_ADDRESS}.proposal-submission-v2`
+  - `${DAO_DEPLOYER_ADDRESS}.proposal-voting-v2`
+  - `${DAO_DEPLOYER_ADDRESS}.governance-token-v2`
+  - `${DAO_DEPLOYER_ADDRESS}.membership-v2`
+  - `${DAO_DEPLOYER_ADDRESS}.extensions-registry-v2`
+  - `${DAO_DEPLOYER_ADDRESS}.treasury-v2`
+  - `${DAO_DEPLOYER_ADDRESS}.treasury-actions-v2`
+  - `${DAO_DEPLOYER_ADDRESS}.template-registry-v2`
+  - `${DAO_DEPLOYER_ADDRESS}.dao-factory-v2`
+
 ## Quick Start
 
 ```bash
@@ -20,6 +36,19 @@ npm run dev
 ```bash
 npm test
 ```
+
+## Stacks Environment
+
+Set these in `.env` for mainnet:
+
+```bash
+STACKS_NETWORK=mainnet
+STACKS_API_URL=https://api.hiro.so
+DAO_DEPLOYER_ADDRESS=SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
+DAO_FACTORY_CONTRACT_ID=SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.dao-factory-v2
+```
+
+If `DAO_FACTORY_CONTRACT_ID` is omitted, backend defaults to `${DAO_DEPLOYER_ADDRESS}.dao-factory-v2`.
 
 ## LLM Providers
 
