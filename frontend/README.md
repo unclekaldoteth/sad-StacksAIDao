@@ -35,6 +35,8 @@ For Vercel production, set `VITE_API_URL` to your backend domain only (do not ap
 VITE_API_URL=https://your-backend.up.railway.app
 ```
 
+For deployment consistency, use `../deploy/env/vercel.frontend.env.example` as the source-of-truth template.
+
 Select Stacks network:
 
 ```

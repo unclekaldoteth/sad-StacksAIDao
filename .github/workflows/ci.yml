@@ -47,3 +47,13 @@ jobs:
         if: matrix.package != 'frontend'
         run: npm test
 
+      - name: Smoke (backend API endpoints)
+        if: matrix.package == 'backend'
+        env:
+          PORT: 3010
+          LLM_PROVIDER: ollama
+          OLLAMA_BASE_URL: http://127.0.0.1:11434
+          STACKS_NETWORK: mainnet
+          STACKS_API_URL: http://127.0.0.1:3999
+          DAO_DEPLOYER_ADDRESS: SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
+        run: npm run smoke

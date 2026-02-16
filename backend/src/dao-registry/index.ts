@@ -219,19 +219,27 @@ export async function resolveDaoContext(opts?: {
         return buildDaoContextFromCoreContract(opts.coreContractId);
     }
 
-    const registry = await listDaos({ limit: 1 });
-    if (registry.defaultDaoId) {
-        const found = await getDaoById(registry.defaultDaoId);
-        if (found) {
-            return {
-                network: found.network,
-                stacksApiUrl: found.stacksApiUrl,
-                deployerAddress: found.contractAddress,
-                contracts: found.contracts,
-                daoId: found.daoId,
-                name: found.name,
-            };
+    try {
+        const registry = await listDaos({ limit: 1 });
+        if (registry.defaultDaoId) {
+            const found = await getDaoById(registry.defaultDaoId);
+            if (found) {
+                return {
+                    network: found.network,
+                    stacksApiUrl: found.stacksApiUrl,
+                    deployerAddress: found.contractAddress,
+                    contracts: found.contracts,
+                    daoId: found.daoId,
+                    name: found.name,
+                };
+            }
         }
+    } catch (error) {
+        // Keep the API usable if factory registry reads fail temporarily.
+        if (!config.stacks.daoDeployer) {
+            throw error;
+        }
+        console.warn(`[dao-registry] Failed to load DAO registry. Falling back to DAO_DEPLOYER_ADDRESS. ${String(error)}`);
     }
 
     // Fall back to legacy single-DAO configuration.
@@ -247,4 +255,3 @@ export async function resolveDaoContext(opts?: {
         name: 'default',
     };
 }
-

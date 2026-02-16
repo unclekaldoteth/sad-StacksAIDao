@@ -122,8 +122,16 @@ Note: `dao-factory/settings/Mainnet.toml` and `dao-factory/settings/Testnet.toml
 ## Test Commands
 
 - Backend: `cd backend && npm test`
+- Backend smoke: `cd backend && npm run build && npm run smoke`
 - DAO contracts: `cd dao-factory && npm test`
 - Frontend: `cd frontend && npm run lint && npm run build` (no test suite configured yet)
+
+## Deployment Environment Templates
+
+Use a single source of truth for production deployment variables:
+
+- Railway backend template: `deploy/env/railway.backend.env.example`
+- Vercel frontend template: `deploy/env/vercel.frontend.env.example`
 
 ## Useful Docs
 

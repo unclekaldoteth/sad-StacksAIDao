@@ -31,10 +31,23 @@ cp .env.example .env
 npm run dev
 ```
 
+The backend now validates critical environment variables at startup and exits with a clear error if configuration is invalid.
+At minimum, set one of:
+
+- `DAO_DEPLOYER_ADDRESS`
+- `DAO_FACTORY_CONTRACT_ID`
+
 ## Testing
 
 ```bash
 npm test
+```
+
+Endpoint smoke test (boots the app and verifies `/api/health` and `/api/dao/config`):
+
+```bash
+npm run build
+npm run smoke
 ```
 
 ## Stacks Environment
@@ -49,6 +62,8 @@ DAO_FACTORY_CONTRACT_ID=SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.dao-factory-v2
 ```
 
 If `DAO_FACTORY_CONTRACT_ID` is omitted, backend defaults to `${DAO_DEPLOYER_ADDRESS}.dao-factory-v2`.
+
+For Railway production deployment, use `../deploy/env/railway.backend.env.example` as the source-of-truth template.
 
 ## LLM Providers
 
