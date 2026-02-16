@@ -29,6 +29,12 @@ Set the API base URL in `.env`:
 VITE_API_URL=http://localhost:3001
 ```
 
+For Vercel production, set `VITE_API_URL` to your backend domain only (do not append `/api`), e.g.:
+
+```
+VITE_API_URL=https://your-backend.up.railway.app
+```
+
 Select Stacks network:
 
 ```

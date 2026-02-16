@@ -4,7 +4,26 @@
 
 import type { ContractIdString } from '@stacks/transactions';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+function normalizeApiBase(rawBase: string): string {
+    const trimmed = rawBase.trim();
+    if (!trimmed) {
+        return 'http://localhost:3001';
+    }
+
+    const withoutTrailingSlash = trimmed.replace(/\/+$/, '');
+    if (withoutTrailingSlash.endsWith('/api')) {
+        return withoutTrailingSlash.slice(0, -4);
+    }
+
+    return withoutTrailingSlash;
+}
+
+function buildApiUrl(base: string, endpoint: string): string {
+    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    return `${base}${normalizedEndpoint}`;
+}
+
+const API_BASE = normalizeApiBase(String(import.meta.env.VITE_API_URL ?? ''));
 
 export interface Proposal {
     id: number;
@@ -175,7 +194,8 @@ export interface DaoAlertsResponse {
 }
 
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const res = await fetch(`${API_BASE}${endpoint}`, {
+    const url = buildApiUrl(API_BASE, endpoint);
+    const res = await fetch(url, {
         ...options,
         headers: {
             'Content-Type': 'application/json',
@@ -197,7 +217,7 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
                 ? String((payload as { error: unknown }).error)
                 : null;
         throw new Error(
-            `API Error (${res.status}): ${(serverError ?? res.statusText) || 'Request failed'}`
+            `API Error (${res.status}) [${url}]: ${(serverError ?? res.statusText) || 'Request failed'}`
         );
     }
 
