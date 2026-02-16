@@ -10,19 +10,52 @@ const CONNECT_STORAGE_KEY = '@stacks/connect';
 
 type ConnectStorageData = {
     addresses?: {
-        stx?: Array<{ address: string }>;
-        btc?: Array<{ address: string }>;
+        stx?: Array<{ address: string; symbol?: string }>;
+        btc?: Array<{ address: string; symbol?: string }>;
     };
     updatedAt?: number;
     version?: string;
 };
 
+type AddressEntry = {
+    address: string;
+    symbol?: string;
+};
+
 function isAddressForNetwork(address: string, networkName: 'mainnet' | 'testnet'): boolean {
     const normalized = address.toUpperCase();
     if (networkName === 'mainnet') {
-        return normalized.startsWith('SP');
+        return normalized.startsWith('SP') || normalized.startsWith('SM');
     }
-    return normalized.startsWith('ST');
+    return normalized.startsWith('ST') || normalized.startsWith('SN');
+}
+
+function isStacksAddress(address: string): boolean {
+    const normalized = address.toUpperCase();
+    return (
+        normalized.startsWith('SP') ||
+        normalized.startsWith('SM') ||
+        normalized.startsWith('ST') ||
+        normalized.startsWith('SN')
+    );
+}
+
+function pickPrimaryStxAddress(
+    addresses: AddressEntry[],
+    networkName: 'mainnet' | 'testnet'
+): string | null {
+    const stxCandidates = addresses.filter((entry) => {
+        if (typeof entry?.address !== 'string') return false;
+        if (entry.symbol?.toUpperCase() === 'STX') return true;
+        return isStacksAddress(entry.address);
+    });
+
+    if (stxCandidates.length === 0) {
+        return null;
+    }
+
+    const networkMatch = stxCandidates.find((entry) => isAddressForNetwork(entry.address, networkName));
+    return networkMatch?.address ?? stxCandidates[0]?.address ?? null;
 }
 
 function readConnectStorage(): ConnectStorageData | null {
@@ -51,14 +84,7 @@ function getPrimaryStxAddress(
     data: ConnectStorageData | null,
     networkName: 'mainnet' | 'testnet'
 ): string | null {
-    const candidates = data?.addresses?.stx ?? [];
-    const matching = candidates.find(
-        (entry) => typeof entry?.address === 'string' && isAddressForNetwork(entry.address, networkName)
-    );
-    if (!matching?.address) {
-        return null;
-    }
-    return matching.address;
+    return pickPrimaryStxAddress(data?.addresses?.stx ?? [], networkName);
 }
 
 export function WalletProvider({ children }: WalletProviderProps) {
@@ -92,12 +118,25 @@ export function WalletProvider({ children }: WalletProviderProps) {
             if (walletConnectProjectId) {
                 options.walletConnectProjectId = walletConnectProjectId;
             }
-            await connect(options);
+            const result = await connect(options);
+            const connectedAddress = pickPrimaryStxAddress(result.addresses ?? [], stacksNetworkName);
 
-            // @stacks/connect v8 caches addresses in localStorage. Read them back for state.
-            refreshFromStorage();
+            if (connectedAddress) {
+                setUserAddress(connectedAddress);
+                setIsConnected(true);
+                return connectedAddress;
+            }
+
+            // Fallback: @stacks/connect v8 caches addresses in localStorage.
+            const data = readConnectStorage();
+            const storageAddress = getPrimaryStxAddress(data, stacksNetworkName);
+            setUserAddress(storageAddress);
+            setIsConnected(Boolean(storageAddress));
+            return storageAddress;
         } catch (error) {
             console.error('Failed to connect wallet:', error);
+            refreshFromStorage();
+            return null;
         } finally {
             setIsConnecting(false);
         }

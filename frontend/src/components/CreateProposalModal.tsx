@@ -68,8 +68,13 @@ export function CreateProposalModal({
 
         setSubmitting(true);
         try {
-            if (!isConnected) {
-                await connect();
+            let senderAddress = userAddress;
+            if (!senderAddress || !isConnected) {
+                senderAddress = await connect();
+            }
+            if (!senderAddress) {
+                setError('Wallet connected, but no STX address was returned.');
+                return;
             }
 
             const {
@@ -85,7 +90,7 @@ export function CreateProposalModal({
                 : noneCV();
 
             const res = await callContract({
-                address: userAddress ?? undefined,
+                address: senderAddress,
                 contract: contracts.proposals,
                 functionName: 'propose',
                 functionArgs: [
@@ -184,4 +189,3 @@ export function CreateProposalModal({
         </div>
     );
 }
-

@@ -5,7 +5,7 @@ export interface WalletContextType {
     isConnected: boolean;
     userAddress: string | null;
     network: StacksNetwork;
-    connect: () => Promise<void>;
+    connect: () => Promise<string | null>;
     disconnect: () => Promise<void>;
     isConnecting: boolean;
 }

@@ -103,8 +103,13 @@ export function ProposalCard({ proposal, daoAddress, contracts, onTransactionSuc
                 return;
             }
 
-            if (!isConnected) {
-                await connect();
+            let senderAddress = userAddress;
+            if (!senderAddress || !isConnected) {
+                senderAddress = await connect();
+            }
+            if (!senderAddress) {
+                setVoteError('Wallet connected, but no STX address was returned.');
+                return;
             }
 
             const VOTE_FOR = 1;
@@ -115,7 +120,7 @@ export function ProposalCard({ proposal, daoAddress, contracts, onTransactionSuc
 
             const { uintCV } = await import('@stacks/transactions');
             const res = await callContract({
-                address: userAddress ?? undefined,
+                address: senderAddress,
                 contract: contracts.voting,
                 functionName: 'vote',
                 functionArgs: [uintCV(BigInt(proposal.id)), uintCV(voteOption)],
