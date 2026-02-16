@@ -99,6 +99,15 @@
   (ok (asserts! (>= n u0) ERR-PROPOSAL-NOT-ACTIVE))
 )
 
+;; Resolve vote weight from governance-token snapshots when available.
+;; If missing, snapshot voting power once for this voter/proposal.
+(define-private (resolve-voting-power (proposal-id uint) (voter principal))
+  (match (contract-call? .governance-token get-snapshot-power voter proposal-id)
+    snapshot-power (ok snapshot-power)
+    (as-contract (contract-call? .governance-token snapshot-voting-power voter proposal-id))
+  )
+)
+
 ;; Public functions
 
 ;; Cast a vote
@@ -106,7 +115,6 @@
   (let
     (
       (voter tx-sender)
-      (voting-power (stx-get-balance voter))
       (current-votes (get-proposal-votes proposal-id))
     )
     ;; Check proposal is active
@@ -116,51 +124,56 @@
     ;; Check hasn't voted
     (asserts! (not (has-voted proposal-id voter)) ERR-ALREADY-VOTED)
     
-    ;; Check has voting power
-    (asserts! (> voting-power u0) ERR-NO-VOTING-POWER)
-
     ;; Check vote option is valid
     (asserts! (or
       (is-eq vote-option VOTE-FOR)
       (is-eq vote-option VOTE-AGAINST)
       (is-eq vote-option VOTE-ABSTAIN)
     ) ERR-INVALID-VOTE-OPTION)
-    
-    ;; Record vote
-    (map-set voter-records 
-      {proposal-id: proposal-id, voter: voter}
-      {
+
+    (let
+      (
+        (voting-power (try! (resolve-voting-power proposal-id voter)))
+      )
+      ;; Check has voting power
+      (asserts! (> voting-power u0) ERR-NO-VOTING-POWER)
+      
+      ;; Record vote
+      (map-set voter-records 
+        {proposal-id: proposal-id, voter: voter}
+        {
+          vote: vote-option,
+          power: voting-power,
+          voted-at: stacks-block-height
+        }
+      )
+      
+      ;; Update vote tallies
+      (map-set proposal-votes proposal-id
+        (merge current-votes {
+          votes-for: (if (is-eq vote-option VOTE-FOR) 
+            (+ (get votes-for current-votes) voting-power) 
+            (get votes-for current-votes)),
+          votes-against: (if (is-eq vote-option VOTE-AGAINST) 
+            (+ (get votes-against current-votes) voting-power) 
+            (get votes-against current-votes)),
+          votes-abstain: (if (is-eq vote-option VOTE-ABSTAIN) 
+            (+ (get votes-abstain current-votes) voting-power) 
+            (get votes-abstain current-votes)),
+          total-votes: (+ (get total-votes current-votes) voting-power),
+          voter-count: (+ (get voter-count current-votes) u1)
+        })
+      )
+      
+      (print {
+        event: "vote-cast",
+        proposal-id: proposal-id,
+        voter: voter,
         vote: vote-option,
-        power: voting-power,
-        voted-at: stacks-block-height
-      }
-    )
-    
-    ;; Update vote tallies
-    (map-set proposal-votes proposal-id
-      (merge current-votes {
-        votes-for: (if (is-eq vote-option VOTE-FOR) 
-          (+ (get votes-for current-votes) voting-power) 
-          (get votes-for current-votes)),
-        votes-against: (if (is-eq vote-option VOTE-AGAINST) 
-          (+ (get votes-against current-votes) voting-power) 
-          (get votes-against current-votes)),
-        votes-abstain: (if (is-eq vote-option VOTE-ABSTAIN) 
-          (+ (get votes-abstain current-votes) voting-power) 
-          (get votes-abstain current-votes)),
-        total-votes: (+ (get total-votes current-votes) voting-power),
-        voter-count: (+ (get voter-count current-votes) u1)
+        power: voting-power
       })
+      (ok true)
     )
-    
-    (print {
-      event: "vote-cast",
-      proposal-id: proposal-id,
-      voter: voter,
-      vote: vote-option,
-      power: voting-power
-    })
-    (ok true)
   )
 )
 

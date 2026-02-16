@@ -7,6 +7,7 @@
 (define-constant ERR-INSUFFICIENT-BALANCE (err u4001))
 (define-constant ERR-DELEGATION-EXISTS (err u4002))
 (define-constant ERR-NO-DELEGATION (err u4003))
+(define-constant ERR-SNAPSHOT-EXISTS (err u4004))
 
 ;; Data vars
 (define-data-var total-delegated uint u0)
@@ -167,6 +168,8 @@
     (try! (is-dao-or-extension))
     (try! (check-principal voter))
     (try! (check-uint proposal-id))
+    ;; Keep snapshots immutable once written for a voter/proposal pair.
+    (asserts! (is-none (get-snapshot-power voter proposal-id)) ERR-SNAPSHOT-EXISTS)
     (let
       (
         (power (unwrap-panic (get-voting-power voter)))

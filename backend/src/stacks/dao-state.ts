@@ -312,8 +312,8 @@ export async function fetchVotingPower(address: string, ctx?: DaoReadOnlyContext
     const { contracts } = dao;
 
     const [powerCv, totalCv] = await Promise.all([
-        callDaoReadOnly(dao, contracts.membership, 'get-voting-power', [principalCV(address)]),
-        callDaoReadOnly(dao, contracts.membership, 'get-total-voting-power', []),
+        callDaoReadOnly(dao, contracts.governanceToken, 'get-voting-power', [principalCV(address)]),
+        callDaoReadOnly(dao, contracts.governanceToken, 'get-total-voting-power', []),
     ]);
 
     const power = unwrapResponseOk(powerCv);
