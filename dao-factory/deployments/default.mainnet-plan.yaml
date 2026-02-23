@@ -1,6 +1,6 @@
 ---
 id: 0
-name: Mainnet deployment
+name: Mainnet deployment — remaining 18 contracts
 network: mainnet
 stacks-node: "https://api.hiro.so"
 bitcoin-node: "http://blockstack:blockstacksystem@bitcoin.blockstack.com:8332"
@@ -9,94 +9,132 @@ plan:
     - id: 0
       transactions:
         - contract-publish:
-            contract-name: dao-traits-v2
+            contract-name: address-book-v2
             expected-sender: SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
-            cost: 2406
-            path: contracts/dao-traits-v2.clar
+            cost: 5000
+            path: contracts/address-book-v2.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
-            contract-name: dao-core-v2
+            contract-name: automation-registry-v2
             expected-sender: SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
-            cost: 8618
-            path: contracts/dao-core-v2.clar
+            cost: 5000
+            path: contracts/automation-registry-v2.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
-            contract-name: dao-factory-v2
+            contract-name: emergency-guardian-v2
             expected-sender: SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
-            cost: 5882
-            path: contracts/dao-factory-v2.clar
+            cost: 5000
+            path: contracts/emergency-guardian-v2.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
-            contract-name: extensions-registry-v2
+            contract-name: fee-rebate-v2
             expected-sender: SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
-            cost: 11288
-            path: contracts/extensions-registry-v2.clar
+            cost: 5000
+            path: contracts/fee-rebate-v2.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
-            contract-name: governance-token-v2
+            contract-name: governance-params-v2
             expected-sender: SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
-            cost: 10102
-            path: contracts/governance-token-v2.clar
+            cost: 5000
+            path: contracts/governance-params-v2.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
-            contract-name: membership-v2
+            contract-name: grants-escrow-v2
             expected-sender: SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
-            cost: 8830
-            path: contracts/membership-v2.clar
+            cost: 5000
+            path: contracts/grants-escrow-v2.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
-            contract-name: mock-proposal-v2
+            contract-name: multisig-adapter-v2
             expected-sender: SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
-            cost: 828
-            path: contracts/mock-proposal-v2.clar
+            cost: 5000
+            path: contracts/multisig-adapter-v2.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
-            contract-name: proposal-submission-v2
+            contract-name: proposal-canceler-v2
             expected-sender: SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
-            cost: 12558
-            path: contracts/proposal-submission-v2.clar
+            cost: 5000
+            path: contracts/proposal-canceler-v2.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
-            contract-name: proposal-voting-v2
+            contract-name: proposal-executor-v2
             expected-sender: SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
-            cost: 12716
-            path: contracts/proposal-voting-v2.clar
+            cost: 5000
+            path: contracts/proposal-executor-v2.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
-            contract-name: template-registry-v2
+            contract-name: proposal-metadata-v2
             expected-sender: SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
-            cost: 7752
-            path: contracts/template-registry-v2.clar
+            cost: 5000
+            path: contracts/proposal-metadata-v2.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
-            contract-name: test-executor-v2
+            contract-name: proposal-tags-v2
             expected-sender: SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
-            cost: 572
-            path: contracts/test-executor-v2.clar
+            cost: 5000
+            path: contracts/proposal-tags-v2.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
-            contract-name: treasury-v2
+            contract-name: quorum-curve-v2
             expected-sender: SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
-            cost: 9188
-            path: contracts/treasury-v2.clar
+            cost: 5000
+            path: contracts/quorum-curve-v2.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
-            contract-name: treasury-actions-v2
+            contract-name: timelock-controller-v2
             expected-sender: SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
-            cost: 11204
-            path: contracts/treasury-actions-v2.clar
+            cost: 5000
+            path: contracts/timelock-controller-v2.clar
+            anchor-block-only: true
+            clarity-version: 3
+      epoch: "3.0"
+    - id: 1
+      transactions:
+        - contract-publish:
+            contract-name: treasury-budget-v2
+            expected-sender: SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
+            cost: 5000
+            path: contracts/treasury-budget-v2.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: treasury-guardrails-v2
+            expected-sender: SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
+            cost: 5000
+            path: contracts/treasury-guardrails-v2.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: treasury-streaming-v2
+            expected-sender: SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
+            cost: 5000
+            path: contracts/treasury-streaming-v2.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: vesting-manager-v2
+            expected-sender: SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
+            cost: 5000
+            path: contracts/vesting-manager-v2.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: voting-strategy-module-v2
+            expected-sender: SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
+            cost: 5000
+            path: contracts/voting-strategy-module-v2.clar
             anchor-block-only: true
             clarity-version: 3
       epoch: "3.0"

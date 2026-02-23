@@ -19,6 +19,7 @@ vi.mock('../src/dao-registry/index.js', () => ({
         stacksApiUrl: 'http://mock',
         deployerAddress: 'ST1TEST',
         contracts: {
+            daoTraits: 'ST1TEST.dao-traits-v2',
             core: 'ST1TEST.dao-core-v2',
             proposals: 'ST1TEST.proposal-submission-v2',
             voting: 'ST1TEST.proposal-voting-v2',
@@ -29,6 +30,26 @@ vi.mock('../src/dao-registry/index.js', () => ({
             extensionsRegistry: 'ST1TEST.extensions-registry-v2',
             templateRegistry: 'ST1TEST.template-registry-v2',
             factory: 'ST1TEST.dao-factory-v2',
+            mockProposal: 'ST1TEST.mock-proposal-v2',
+            testExecutor: 'ST1TEST.test-executor-v2',
+            proposalExecutor: 'ST1TEST.proposal-executor-v2',
+            timelockController: 'ST1TEST.timelock-controller-v2',
+            proposalCanceler: 'ST1TEST.proposal-canceler-v2',
+            emergencyGuardian: 'ST1TEST.emergency-guardian-v2',
+            governanceParams: 'ST1TEST.governance-params-v2',
+            votingStrategyModule: 'ST1TEST.voting-strategy-module-v2',
+            quorumCurve: 'ST1TEST.quorum-curve-v2',
+            proposalMetadata: 'ST1TEST.proposal-metadata-v2',
+            proposalTags: 'ST1TEST.proposal-tags-v2',
+            treasuryGuardrails: 'ST1TEST.treasury-guardrails-v2',
+            treasuryStreaming: 'ST1TEST.treasury-streaming-v2',
+            grantsEscrow: 'ST1TEST.grants-escrow-v2',
+            vestingManager: 'ST1TEST.vesting-manager-v2',
+            feeRebate: 'ST1TEST.fee-rebate-v2',
+            treasuryBudget: 'ST1TEST.treasury-budget-v2',
+            multisigAdapter: 'ST1TEST.multisig-adapter-v2',
+            automationRegistry: 'ST1TEST.automation-registry-v2',
+            addressBook: 'ST1TEST.address-book-v2',
         },
         daoId: '1',
         name: 'Test DAO',
@@ -110,6 +131,26 @@ vi.mock('../src/stacks/dao-state.js', () => ({
         address,
         votingPower: '0',
         totalVotingPower: '0',
+    })),
+    fetchDaoOperations: vi.fn(async () => ({
+        timelock: {
+            minDelayBlocks: '144',
+        },
+        executor: {
+            minDelayBlocks: '10',
+            queued: [],
+        },
+        emergency: {
+            guardian: 'ST1GUARDIAN',
+            globalPaused: false,
+        },
+        guardrails: {
+            maxSpendBps: '2000',
+            blocksPerPeriod: '144',
+            periodLimit: '2000000000',
+            currentPeriod: '10',
+            currentPeriodSpent: '50000000',
+        },
     })),
 }));
 
@@ -435,6 +476,18 @@ describe('API Routes', () => {
             expect(res.body.alerts).toBeInstanceOf(Array);
             expect(res.body.scanned).toBeDefined();
             expect(res.body.generatedAt).toBeTypeOf('string');
+        });
+    });
+
+    describe('GET /api/dao/operations', () => {
+        it('returns operational contract state', async () => {
+            const res = await request(app, 'GET', '/api/dao/operations');
+
+            expect(res.status).toBe(200);
+            expect(res.body.timelock.minDelayBlocks).toBe('144');
+            expect(res.body.executor.minDelayBlocks).toBe('10');
+            expect(res.body.emergency.guardian).toBe('ST1GUARDIAN');
+            expect(res.body.guardrails.maxSpendBps).toBe('2000');
         });
     });
 

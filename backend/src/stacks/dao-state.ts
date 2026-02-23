@@ -6,6 +6,7 @@ import {
 import { config } from '../config/index.js';
 import { buildDaoContracts, type DaoContracts } from './dao-contracts.js';
 import {
+    expectBool,
     expectPrincipalString,
     expectString,
     expectTuple,
@@ -92,6 +93,37 @@ export type DaoVotingPowerResponse = {
     address: string;
     votingPower: string;
     totalVotingPower: string;
+};
+
+export type DaoQueuedExecution = {
+    proposalId: string;
+    proposalContract: string;
+    readyAtBlock: string;
+    queuedAtBlock: string;
+    queuedBy: string;
+    executed: boolean;
+    canceled: boolean;
+};
+
+export type DaoOperationsResponse = {
+    timelock: {
+        minDelayBlocks: string;
+    };
+    executor: {
+        minDelayBlocks: string;
+        queued: DaoQueuedExecution[];
+    };
+    emergency: {
+        guardian: string;
+        globalPaused: boolean;
+    };
+    guardrails: {
+        maxSpendBps: string;
+        blocksPerPeriod: string;
+        periodLimit: string;
+        currentPeriod: string;
+        currentPeriodSpent: string;
+    };
 };
 
 function requireDeployerAddress(): string {
@@ -323,5 +355,93 @@ export async function fetchVotingPower(address: string, ctx?: DaoReadOnlyContext
         address,
         votingPower: expectUintString(power),
         totalVotingPower: expectUintString(total),
+    };
+}
+
+export async function fetchDaoOperations(opts?: {
+    queueLimit?: number;
+    ctx?: DaoReadOnlyContext;
+}): Promise<DaoOperationsResponse> {
+    const dao = opts?.ctx ?? getDaoConfig();
+    const { contracts } = dao;
+
+    const [
+        timelockDelayCv,
+        executorDelayCv,
+        guardianCv,
+        globalPausedCv,
+        guardrailsPolicyCv,
+        currentPeriodCv,
+        proposalCountCv,
+    ] = await Promise.all([
+        callDaoReadOnly(dao, contracts.timelockController, 'get-min-delay'),
+        callDaoReadOnly(dao, contracts.proposalExecutor, 'get-min-delay'),
+        callDaoReadOnly(dao, contracts.emergencyGuardian, 'get-guardian'),
+        callDaoReadOnly(dao, contracts.emergencyGuardian, 'is-globally-paused'),
+        callDaoReadOnly(dao, contracts.treasuryGuardrails, 'get-policy'),
+        callDaoReadOnly(dao, contracts.treasuryGuardrails, 'get-period-index'),
+        callDaoReadOnly(dao, contracts.proposals, 'get-proposal-count'),
+    ]);
+
+    const guardrailsPolicy = expectTuple(guardrailsPolicyCv);
+    const proposalCount = BigInt(expectUintString(proposalCountCv));
+    const queueLimit = opts?.queueLimit && opts.queueLimit > 0 ? BigInt(opts.queueLimit) : 20n;
+    const queueStart = proposalCount > queueLimit ? proposalCount - queueLimit + 1n : 1n;
+
+    const proposalIds: bigint[] = [];
+    for (let i = queueStart; i <= proposalCount; i += 1n) {
+        proposalIds.push(i);
+    }
+
+    const queuedEntries = await Promise.all(
+        proposalIds
+            .slice()
+            .reverse()
+            .map(async (proposalId) => {
+                const queuedCv = await callDaoReadOnly(dao, contracts.proposalExecutor, 'get-queued', [uintCV(proposalId)]);
+                const queuedOpt = unwrapOptional(queuedCv);
+                if (!queuedOpt) {
+                    return null;
+                }
+                const queued = expectTuple(queuedOpt);
+                return {
+                    proposalId: proposalId.toString(),
+                    proposalContract: expectPrincipalString(queued.proposal),
+                    readyAtBlock: expectUintString(queued['ready-at']),
+                    queuedAtBlock: expectUintString(queued['queued-at']),
+                    queuedBy: expectPrincipalString(queued['queued-by']),
+                    executed: expectBool(queued.executed),
+                    canceled: expectBool(queued.canceled),
+                } satisfies DaoQueuedExecution;
+            })
+    );
+
+    const currentPeriod = expectUintString(currentPeriodCv);
+    const currentPeriodSpentCv = await callDaoReadOnly(
+        dao,
+        contracts.treasuryGuardrails,
+        'get-period-spent',
+        [uintCV(BigInt(currentPeriod))]
+    );
+
+    return {
+        timelock: {
+            minDelayBlocks: expectUintString(timelockDelayCv),
+        },
+        executor: {
+            minDelayBlocks: expectUintString(executorDelayCv),
+            queued: queuedEntries.filter((entry): entry is DaoQueuedExecution => Boolean(entry)),
+        },
+        emergency: {
+            guardian: expectPrincipalString(guardianCv),
+            globalPaused: expectBool(globalPausedCv),
+        },
+        guardrails: {
+            maxSpendBps: expectUintString(guardrailsPolicy['max-spend-bps']),
+            blocksPerPeriod: expectUintString(guardrailsPolicy['blocks-per-period']),
+            periodLimit: expectUintString(guardrailsPolicy['period-limit']),
+            currentPeriod,
+            currentPeriodSpent: expectUintString(currentPeriodSpentCv),
+        },
     };
 }

@@ -65,6 +65,16 @@ export function expectPrincipalString(cv: ClarityValue): string {
     throw new Error(`Expected principal, got: ${JSON.stringify(cvToJSON(cv))}`);
 }
 
+export function expectBool(cv: ClarityValue): boolean {
+    if (isClarityType(cv, ClarityType.BoolTrue)) {
+        return true;
+    }
+    if (isClarityType(cv, ClarityType.BoolFalse)) {
+        return false;
+    }
+    throw new Error(`Expected bool, got: ${JSON.stringify(cvToJSON(cv))}`);
+}
+
 export function cvToPlain(cv: ClarityValue): PlainValue {
     switch (cv.type) {
         case ClarityType.BoolTrue:

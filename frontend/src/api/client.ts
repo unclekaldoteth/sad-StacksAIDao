@@ -64,6 +64,7 @@ export interface HealthStatus {
 }
 
 export type DaoContracts = {
+    daoTraits: ContractIdString;
     core: ContractIdString;
     proposals: ContractIdString;
     voting: ContractIdString;
@@ -74,6 +75,26 @@ export type DaoContracts = {
     extensionsRegistry: ContractIdString;
     templateRegistry: ContractIdString;
     factory: ContractIdString;
+    mockProposal: ContractIdString;
+    testExecutor: ContractIdString;
+    proposalExecutor: ContractIdString;
+    timelockController: ContractIdString;
+    proposalCanceler: ContractIdString;
+    emergencyGuardian: ContractIdString;
+    governanceParams: ContractIdString;
+    votingStrategyModule: ContractIdString;
+    quorumCurve: ContractIdString;
+    proposalMetadata: ContractIdString;
+    proposalTags: ContractIdString;
+    treasuryGuardrails: ContractIdString;
+    treasuryStreaming: ContractIdString;
+    grantsEscrow: ContractIdString;
+    vestingManager: ContractIdString;
+    feeRebate: ContractIdString;
+    treasuryBudget: ContractIdString;
+    multisigAdapter: ContractIdString;
+    automationRegistry: ContractIdString;
+    addressBook: ContractIdString;
 };
 
 export interface DaoConfig {
@@ -193,6 +214,37 @@ export interface DaoAlertsResponse {
     alerts: DaoAlert[];
 }
 
+export interface DaoQueuedExecution {
+    proposalId: string;
+    proposalContract: string;
+    readyAtBlock: string;
+    queuedAtBlock: string;
+    queuedBy: string;
+    executed: boolean;
+    canceled: boolean;
+}
+
+export interface DaoOperationsResponse {
+    timelock: {
+        minDelayBlocks: string;
+    };
+    executor: {
+        minDelayBlocks: string;
+        queued: DaoQueuedExecution[];
+    };
+    emergency: {
+        guardian: string;
+        globalPaused: boolean;
+    };
+    guardrails: {
+        maxSpendBps: string;
+        blocksPerPeriod: string;
+        periodLimit: string;
+        currentPeriod: string;
+        currentPeriodSpent: string;
+    };
+}
+
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const url = buildApiUrl(API_BASE, endpoint);
     const res = await fetch(url, {
@@ -265,6 +317,13 @@ export const api = {
         if (recentSpendsLimit) params.set('recentSpendsLimit', String(recentSpendsLimit));
         const query = params.toString();
         return request<DaoAlertsResponse>(`/api/dao/alerts${query ? `?${query}` : ''}`);
+    },
+    daoOperations: (daoId?: string, queueLimit?: number) => {
+        const params = new URLSearchParams();
+        if (daoId) params.set('daoId', daoId);
+        if (queueLimit) params.set('queueLimit', String(queueLimit));
+        const query = params.toString();
+        return request<DaoOperationsResponse>(`/api/dao/operations${query ? `?${query}` : ''}`);
     },
     daoVotingPower: (daoId: string | undefined, address: string) => {
         const params = new URLSearchParams();

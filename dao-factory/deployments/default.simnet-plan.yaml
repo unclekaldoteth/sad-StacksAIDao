@@ -64,68 +64,161 @@ plan:
     - id: 0
       transactions:
         - emulated-contract-publish:
-            contract-name: dao-traits
+            contract-name: dao-traits-v2
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/dao-traits.clar
+            path: contracts/dao-traits-v2.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: dao-core
+            contract-name: dao-core-v2
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/dao-core.clar
+            path: contracts/dao-core-v2.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: dao-factory
+            contract-name: address-book-v2
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/dao-factory.clar
+            path: contracts/address-book-v2.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: extensions-registry
+            contract-name: automation-registry-v2
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/extensions-registry.clar
+            path: contracts/automation-registry-v2.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: governance-token
+            contract-name: dao-factory-v2
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/governance-token.clar
+            path: contracts/dao-factory-v2.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: membership
+            contract-name: emergency-guardian-v2
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/membership.clar
+            path: contracts/emergency-guardian-v2.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: mock-proposal
+            contract-name: extensions-registry-v2
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/mock-proposal.clar
+            path: contracts/extensions-registry-v2.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: proposal-submission
+            contract-name: treasury-v2
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/proposal-submission.clar
+            path: contracts/treasury-v2.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: proposal-voting
+            contract-name: fee-rebate-v2
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/proposal-voting.clar
+            path: contracts/fee-rebate-v2.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: template-registry
+            contract-name: governance-params-v2
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/template-registry.clar
+            path: contracts/governance-params-v2.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: test-executor
+            contract-name: governance-token-v2
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/test-executor.clar
+            path: contracts/governance-token-v2.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: treasury
+            contract-name: grants-escrow-v2
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/treasury.clar
+            path: contracts/grants-escrow-v2.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: treasury-actions
+            contract-name: membership-v2
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/treasury-actions.clar
+            path: contracts/membership-v2.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: mock-proposal-v2
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/mock-proposal-v2.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: multisig-adapter-v2
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/multisig-adapter-v2.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: proposal-submission-v2
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/proposal-submission-v2.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: proposal-canceler-v2
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/proposal-canceler-v2.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: proposal-executor-v2
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/proposal-executor-v2.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: proposal-metadata-v2
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/proposal-metadata-v2.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: proposal-tags-v2
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/proposal-tags-v2.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: proposal-voting-v2
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/proposal-voting-v2.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: quorum-curve-v2
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/quorum-curve-v2.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: template-registry-v2
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/template-registry-v2.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: test-executor-v2
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/test-executor-v2.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: timelock-controller-v2
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/timelock-controller-v2.clar
+            clarity-version: 3
+      epoch: "3.0"
+    - id: 1
+      transactions:
+        - emulated-contract-publish:
+            contract-name: treasury-actions-v2
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/treasury-actions-v2.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: treasury-budget-v2
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/treasury-budget-v2.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: treasury-guardrails-v2
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/treasury-guardrails-v2.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: treasury-streaming-v2
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/treasury-streaming-v2.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: vesting-manager-v2
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/vesting-manager-v2.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: voting-strategy-module-v2
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/voting-strategy-module-v2.clar
             clarity-version: 3
       epoch: "3.0"

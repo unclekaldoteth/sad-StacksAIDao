@@ -10,6 +10,7 @@ import { listDaos, resolveDaoContext } from '../dao-registry/index.js';
 import { getLLMProvider, ProviderFactory } from '../providers/index.js';
 import { config } from '../config/index.js';
 import {
+    fetchDaoOperations,
     fetchDaoOverview,
     fetchDaoProposals,
     fetchDaoProposalById,
@@ -312,6 +313,36 @@ router.get('/dao/voting-power', async (req, res) => {
     try {
         const ctx = await resolveDaoContext({ daoId: parsed.data.daoId });
         const data = await fetchVotingPower(parsed.data.address, ctx);
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: String(error) });
+    }
+});
+
+/**
+ * DAO Operations (executor/timelock/guardian/guardrails)
+ */
+router.get('/dao/operations', async (req, res) => {
+    const querySchema = z.object({
+        daoId: z.string().min(1).optional(),
+        queueLimit: z
+            .string()
+            .optional()
+            .transform((v) => (v ? Number(v) : undefined))
+            .refine((v) => v === undefined || (Number.isFinite(v) && v > 0), {
+                message: 'queueLimit must be a positive number',
+            }),
+    });
+
+    const parsed = querySchema.safeParse(req.query);
+    if (!parsed.success) {
+        res.status(400).json({ error: 'Invalid query params', details: parsed.error.flatten() });
+        return;
+    }
+
+    try {
+        const ctx = await resolveDaoContext({ daoId: parsed.data.daoId });
+        const data = await fetchDaoOperations({ queueLimit: parsed.data.queueLimit, ctx });
         res.json(data);
     } catch (error) {
         res.status(500).json({ error: String(error) });

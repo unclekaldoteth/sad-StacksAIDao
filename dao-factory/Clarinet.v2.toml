@@ -7,69 +7,159 @@ cache_dir = "./.cache"
 
 # Core DAO Contracts
 [contracts.dao-traits-v2]
-path = "contracts/dao-traits-v2.clar"
+path = "./contracts/dao-traits-v2.clar"
 epoch = "3.0"
 
 [contracts.dao-core-v2]
-path = "contracts/dao-core-v2.clar"
+path = "./contracts/dao-core-v2.clar"
 epoch = "3.0"
 depends_on = ["dao-traits-v2"]
 
 [contracts.membership-v2]
-path = "contracts/membership-v2.clar"
+path = "./contracts/membership-v2.clar"
 epoch = "3.0"
 depends_on = ["dao-core-v2"]
 
 [contracts.extensions-registry-v2]
-path = "contracts/extensions-registry-v2.clar"
+path = "./contracts/extensions-registry-v2.clar"
 epoch = "3.0"
 depends_on = ["dao-core-v2"]
 
 # Governance Contracts
 [contracts.governance-token-v2]
-path = "contracts/governance-token-v2.clar"
+path = "./contracts/governance-token-v2.clar"
 epoch = "3.0"
 depends_on = ["dao-core-v2"]
 
 [contracts.proposal-submission-v2]
-path = "contracts/proposal-submission-v2.clar"
+path = "./contracts/proposal-submission-v2.clar"
 epoch = "3.0"
 depends_on = ["dao-core-v2"]
 
 [contracts.proposal-voting-v2]
-path = "contracts/proposal-voting-v2.clar"
+path = "./contracts/proposal-voting-v2.clar"
 epoch = "3.0"
 depends_on = ["dao-core-v2", "proposal-submission-v2", "governance-token-v2"]
 
+[contracts.proposal-executor-v2]
+path = "./contracts/proposal-executor-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2", "dao-traits-v2", "proposal-submission-v2"]
+
+[contracts.timelock-controller-v2]
+path = "./contracts/timelock-controller-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2"]
+
+[contracts.proposal-canceler-v2]
+path = "./contracts/proposal-canceler-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2"]
+
+[contracts.emergency-guardian-v2]
+path = "./contracts/emergency-guardian-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2"]
+
+[contracts.governance-params-v2]
+path = "./contracts/governance-params-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2"]
+
+[contracts.voting-strategy-module-v2]
+path = "./contracts/voting-strategy-module-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2", "proposal-voting-v2"]
+
+[contracts.quorum-curve-v2]
+path = "./contracts/quorum-curve-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2"]
+
+[contracts.proposal-metadata-v2]
+path = "./contracts/proposal-metadata-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2", "proposal-submission-v2"]
+
+[contracts.proposal-tags-v2]
+path = "./contracts/proposal-tags-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2", "proposal-submission-v2"]
+
 # Treasury Contracts
 [contracts.treasury-v2]
-path = "contracts/treasury-v2.clar"
+path = "./contracts/treasury-v2.clar"
 epoch = "3.0"
 depends_on = ["dao-core-v2"]
 
 [contracts.treasury-actions-v2]
-path = "contracts/treasury-actions-v2.clar"
+path = "./contracts/treasury-actions-v2.clar"
 epoch = "3.0"
 depends_on = ["dao-core-v2", "treasury-v2"]
 
+[contracts.treasury-guardrails-v2]
+path = "./contracts/treasury-guardrails-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2"]
+
+[contracts.treasury-streaming-v2]
+path = "./contracts/treasury-streaming-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2", "treasury-v2"]
+
+[contracts.grants-escrow-v2]
+path = "./contracts/grants-escrow-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2", "treasury-v2"]
+
+[contracts.vesting-manager-v2]
+path = "./contracts/vesting-manager-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2", "treasury-v2"]
+
+[contracts.fee-rebate-v2]
+path = "./contracts/fee-rebate-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2", "treasury-v2"]
+
+[contracts.treasury-budget-v2]
+path = "./contracts/treasury-budget-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2"]
+
+[contracts.multisig-adapter-v2]
+path = "./contracts/multisig-adapter-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2"]
+
+[contracts.automation-registry-v2]
+path = "./contracts/automation-registry-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2"]
+
+[contracts.address-book-v2]
+path = "./contracts/address-book-v2.clar"
+epoch = "3.0"
+depends_on = ["dao-core-v2"]
+
 # Test Helper Contracts
 [contracts.mock-proposal-v2]
-path = "contracts/mock-proposal-v2.clar"
+path = "./contracts/mock-proposal-v2.clar"
 epoch = "3.0"
 depends_on = ["dao-traits-v2"]
 
 [contracts.test-executor-v2]
-path = "contracts/test-executor-v2.clar"
+path = "./contracts/test-executor-v2.clar"
 epoch = "3.0"
 depends_on = ["dao-core-v2", "dao-traits-v2"]
 
 # Factory Contracts
 [contracts.dao-factory-v2]
-path = "contracts/dao-factory-v2.clar"
+path = "./contracts/dao-factory-v2.clar"
 epoch = "3.0"
 
 [contracts.template-registry-v2]
-path = "contracts/template-registry-v2.clar"
+path = "./contracts/template-registry-v2.clar"
 epoch = "3.0"
 
 [repl.analysis]

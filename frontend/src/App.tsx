@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import { Header } from './components/Header';
 import { StatsCards } from './components/StatsCards';
@@ -8,10 +8,12 @@ import { AIAgentCards } from './components/AIAgentCards';
 import { AlertsPanel } from './components/AlertsPanel';
 import { TreasuryPanel } from './components/TreasuryPanel';
 import { CreateProposalModal } from './components/CreateProposalModal';
+import { GovernanceOpsPanel } from './components/GovernanceOpsPanel';
 import { api } from './api/client';
 import type {
   DaoAlertsResponse,
   DaoConfig,
+  DaoOperationsResponse,
   DaoOverview,
   DaoProposal,
   DaoRegistryResponse,
@@ -31,6 +33,10 @@ function shortContractId(contractId: string): string {
   return `${contractId.slice(0, 24)}...${contractId.slice(-12)}`;
 }
 
+function formatContractKey(key: string): string {
+  return key.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+}
+
 function App() {
   const { userAddress } = useWallet();
   const [health, setHealth] = useState<HealthStatus | null>(null);
@@ -43,6 +49,7 @@ function App() {
   const [treasuryInsight, setTreasuryInsight] = useState<TreasuryInsight | null>(null);
   const [votingPower, setVotingPower] = useState<DaoVotingPower | null>(null);
   const [alerts, setAlerts] = useState<DaoAlertsResponse | null>(null);
+  const [operations, setOperations] = useState<DaoOperationsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showCreateProposal, setShowCreateProposal] = useState(false);
@@ -60,6 +67,7 @@ function App() {
       setTreasuryInsight(null);
       setVotingPower(null);
       setAlerts(null);
+      setOperations(null);
     }
 
     return Promise.all([
@@ -68,8 +76,9 @@ function App() {
       api.daoProposals(daoId, 50),
       api.daoTreasury(daoId, 10),
       api.daoAlerts(daoId, 10, 10).catch(() => null),
+      api.daoOperations(daoId, 20).catch(() => null),
     ])
-      .then(([configRes, overviewRes, proposalsRes, treasuryRes, alertsRes]) => {
+      .then(([configRes, overviewRes, proposalsRes, treasuryRes, alertsRes, operationsRes]) => {
         if (requestId !== loadRequestIdRef.current) return;
 
         setDaoConfig(configRes);
@@ -77,6 +86,7 @@ function App() {
         setProposals(proposalsRes.proposals);
         setTreasury(treasuryRes);
         setAlerts(alertsRes);
+        setOperations(operationsRes);
 
         // Optional: ask the AI for treasury recommendations based on live on-chain data.
         // This is intentionally "best effort" and should not block the dashboard.
@@ -206,24 +216,32 @@ function App() {
             <div className="card contract-debug">
               <div className="contract-debug-header">
                 <h3>On-Chain Contract Set</h3>
-                <span className="badge badge-success">{contractSetLabel ?? 'Contracts'}</span>
+                <span className="badge badge-success">
+                  {(contractSetLabel ?? 'Contracts') + ` • ${Object.keys(daoConfig.contracts).length}`}
+                </span>
               </div>
               <p className="contract-debug-copy">
-                Active contract IDs loaded from backend configuration.
+                Active contract IDs loaded from backend configuration for the selected DAO.
               </p>
               <div className="contract-debug-grid">
-                <span>Factory</span>
-                <code>{shortContractId(daoConfig.contracts.factory)}</code>
-                <span>Core</span>
-                <code>{shortContractId(daoConfig.contracts.core)}</code>
-                <span>Voting</span>
-                <code>{shortContractId(daoConfig.contracts.voting)}</code>
-                <span>Treasury</span>
-                <code>{shortContractId(daoConfig.contracts.treasury)}</code>
+                {(Object.entries(daoConfig.contracts) as Array<[string, string]>).map(([name, contractId]) => (
+                  <Fragment key={name}>
+                    <span>{formatContractKey(name)}</span>
+                    <code>{shortContractId(contractId)}</code>
+                  </Fragment>
+                ))}
               </div>
             </div>
           </section>
         ) : null}
+
+        <GovernanceOpsPanel
+          contracts={daoConfig?.contracts ?? null}
+          operations={operations}
+          onRefresh={() => {
+            void loadDao(selectedDaoId, { keepExisting: true });
+          }}
+        />
 
         {/* Dashboard Stats */}
         <section className="section">

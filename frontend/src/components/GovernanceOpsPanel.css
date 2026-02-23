@@ -1,0 +1,80 @@
+.ops-panel {
+  padding: 1.25rem;
+}
+
+.ops-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.ops-card {
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: var(--card-bg);
+}
+
+.ops-card h3,
+.ops-card h4 {
+  margin-top: 0;
+}
+
+.ops-list {
+  margin: 0 0 1rem;
+  padding-left: 1.1rem;
+  color: var(--text-secondary);
+}
+
+.ops-form {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.ops-inline {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.ops-queued-list {
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.75rem;
+}
+
+.ops-queued-list ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1rem;
+  color: var(--text-secondary);
+}
+
+.ops-muted {
+  color: var(--text-secondary);
+}
+
+.ops-error {
+  margin-top: 0.75rem;
+  color: var(--error);
+}
+
+.ops-success {
+  margin-top: 0.75rem;
+  color: var(--success);
+}
+
+.ops-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 1100px) {
+  .ops-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ops-inline {
+    grid-template-columns: 1fr;
+  }
+}
