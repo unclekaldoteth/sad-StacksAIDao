@@ -1,0 +1,167 @@
+[project]
+name = "dao-factory-v2-c4"
+description = "DAO contracts — Clarity 4 / epoch 3.2"
+authors = []
+telemetry = false
+cache_dir = "./.cache"
+
+# Core DAO Contracts
+[contracts.dao-traits-v2-c4]
+path = "./contracts/dao-traits-v2-c4.clar"
+epoch = "3.2"
+
+[contracts.dao-core-v2-c4]
+path = "./contracts/dao-core-v2-c4.clar"
+epoch = "3.2"
+
+
+[contracts.membership-v2-c4]
+path = "./contracts/membership-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4"]
+
+[contracts.extensions-registry-v2-c4]
+path = "./contracts/extensions-registry-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4"]
+
+# Governance Contracts
+[contracts.governance-token-v2-c4]
+path = "./contracts/governance-token-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4"]
+
+[contracts.proposal-submission-v2-c4]
+path = "./contracts/proposal-submission-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4"]
+
+[contracts.proposal-voting-v2-c4]
+path = "./contracts/proposal-voting-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4", "proposal-submission-v2-c4", "governance-token-v2-c4"]
+
+[contracts.proposal-executor-v2-c4]
+path = "./contracts/proposal-executor-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4", "proposal-submission-v2-c4"]
+
+[contracts.timelock-controller-v2-c4]
+path = "./contracts/timelock-controller-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4"]
+
+[contracts.proposal-canceler-v2-c4]
+path = "./contracts/proposal-canceler-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4"]
+
+[contracts.emergency-guardian-v2-c4]
+path = "./contracts/emergency-guardian-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4"]
+
+[contracts.governance-params-v2-c4]
+path = "./contracts/governance-params-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4"]
+
+[contracts.voting-strategy-module-v2-c4]
+path = "./contracts/voting-strategy-module-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4", "proposal-voting-v2-c4"]
+
+[contracts.quorum-curve-v2-c4]
+path = "./contracts/quorum-curve-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4"]
+
+[contracts.proposal-metadata-v2-c4]
+path = "./contracts/proposal-metadata-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4", "proposal-submission-v2-c4"]
+
+[contracts.proposal-tags-v2-c4]
+path = "./contracts/proposal-tags-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4", "proposal-submission-v2-c4"]
+
+# Treasury Contracts
+[contracts.treasury-v2-c4]
+path = "./contracts/treasury-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4"]
+
+[contracts.treasury-actions-v2-c4]
+path = "./contracts/treasury-actions-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4", "treasury-v2-c4"]
+
+[contracts.treasury-guardrails-v2-c4]
+path = "./contracts/treasury-guardrails-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4"]
+
+[contracts.treasury-streaming-v2-c4]
+path = "./contracts/treasury-streaming-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4", "treasury-v2-c4"]
+
+[contracts.grants-escrow-v2-c4]
+path = "./contracts/grants-escrow-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4", "treasury-v2-c4"]
+
+[contracts.vesting-manager-v2-c4]
+path = "./contracts/vesting-manager-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4", "treasury-v2-c4"]
+
+[contracts.fee-rebate-v2-c4]
+path = "./contracts/fee-rebate-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4", "treasury-v2-c4"]
+
+[contracts.treasury-budget-v2-c4]
+path = "./contracts/treasury-budget-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4"]
+
+[contracts.multisig-adapter-v2-c4]
+path = "./contracts/multisig-adapter-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4"]
+
+[contracts.automation-registry-v2-c4]
+path = "./contracts/automation-registry-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4"]
+
+[contracts.address-book-v2-c4]
+path = "./contracts/address-book-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4"]
+
+# Test Helper Contracts
+[contracts.mock-proposal-v2-c4]
+path = "./contracts/mock-proposal-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-traits-v2-c4"]
+
+[contracts.test-executor-v2-c4]
+path = "./contracts/test-executor-v2-c4.clar"
+epoch = "3.2"
+depends_on = ["dao-core-v2-c4"]
+
+# Factory Contracts
+[contracts.dao-factory-v2-c4]
+path = "./contracts/dao-factory-v2-c4.clar"
+epoch = "3.2"
+
+[contracts.template-registry-v2-c4]
+path = "./contracts/template-registry-v2-c4.clar"
+epoch = "3.2"
+
+[repl.analysis]
+passes = ["check_checker"]
+check_checker = { trusted_sender = true, trusted_caller = true, callee_filter = true }

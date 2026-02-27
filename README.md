@@ -22,7 +22,7 @@ This repository contains three coordinated packages:
    - read-only on-chain DAO state (`GET /api/dao/*`)
    - heuristic risk scanning and alerts (`GET /api/dao/alerts`)
    - AI endpoints (`POST /api/analyze-proposal`, `POST /api/voting-recommendation`, `POST /api/analyze-treasury`, `POST /api/chat`) that pull live on-chain context before prompting the LLM.
-   - builds DAO contract IDs using the `-v2` contract set by default (for the latest mainnet deployment)
+  - builds DAO contract IDs using the `-v2` contract set by default (legacy-compatible default)
 3. `frontend` presents proposals and assistant interactions, consumes `/api/dao/*` and `/api/dao/alerts` for real on-chain state, and uses wallet transactions for proposal creation and voting.
 
 ## Architecture Diagram
@@ -41,18 +41,22 @@ flowchart TB
   F -->|"wallet tx (propose/vote)"| DAO
 ```
 
-## Current Mainnet Deployment (February 16, 2026)
+## Current Mainnet Deployment (February 27, 2026)
 
 - Network: `mainnet`
 - Deployer: `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK`
-- Active contract set: `-v2`
-- Core contract IDs:
+- Legacy contract set: `-v2`
+- Legacy core contract IDs:
   - `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.dao-core-v2`
   - `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.proposal-submission-v2`
   - `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.proposal-voting-v2`
   - `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.governance-token-v2`
   - `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.treasury-v2`
   - `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.dao-factory-v2`
+- Expanded contract set: `-v2-c4` (31 contracts deployed)
+- Core notes for `-v2-c4`:
+  - `dao-core-v2-c4` exists on-chain as Clarity 3 (first successful publish under that immutable contract name)
+  - Clarity 4 core variant is deployed as `dao-core-v2-c4-v4`
 
 ## Local Development
 
@@ -113,6 +117,18 @@ cd dao-factory
 clarinet check -m Clarinet.v2.toml
 clarinet deployments generate --mainnet --manual-cost -m Clarinet.v2.toml
 clarinet deployments apply --mainnet -d --no-dashboard -m Clarinet.v2.toml
+```
+
+Deploy the `v2-c4` contracts on mainnet:
+
+```bash
+cd dao-factory
+clarinet check -m Clarinet.v2-c4.toml
+clarinet deployments apply \
+  --manifest-path Clarinet.v2-c4.toml \
+  --deployment-plan-path deployments/default.mainnet-v2-c4-remaining-plan.yaml \
+  --use-on-disk-deployment-plan \
+  --no-dashboard
 ```
 
 For low stable fees, set `deployment_fee_rate = 2` in `dao-factory/settings/Mainnet.toml`.

@@ -1,69 +1,33 @@
-# 31-Contract Deployment Draft (v2)
+# 31-Contract Deployment Status (v2-c4)
 
-This draft expands the v2 stack from 13 to 31 contracts.
+Status updated on February 27, 2026.
 
-## Contract Count
+## Summary
 
-- Existing v2 contracts: 13
-- New draft contracts: 18
-- Total: 31
+- Network: `mainnet`
+- Deployer: `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK`
+- Target stack: `v2-c4` (31 contracts)
+- Result: all 31 contracts in the `v2-c4` set are deployed on mainnet
 
-## Full Contract Set
+## Clarity Version Notes
 
-1. dao-traits-v2
-2. dao-core-v2
-3. dao-factory-v2
-4. extensions-registry-v2
-5. governance-token-v2
-6. membership-v2
-7. proposal-submission-v2
-8. proposal-voting-v2
-9. treasury-v2
-10. treasury-actions-v2
-11. template-registry-v2
-12. mock-proposal-v2
-13. test-executor-v2
-14. proposal-executor-v2
-15. timelock-controller-v2
-16. proposal-canceler-v2
-17. emergency-guardian-v2
-18. governance-params-v2
-19. voting-strategy-module-v2
-20. quorum-curve-v2
-21. proposal-metadata-v2
-22. proposal-tags-v2
-23. treasury-guardrails-v2
-24. treasury-streaming-v2
-25. grants-escrow-v2
-26. vesting-manager-v2
-27. fee-rebate-v2
-28. treasury-budget-v2
-29. multisig-adapter-v2
-30. automation-registry-v2
-31. address-book-v2
+- `dao-core-v2-c4` is deployed as Clarity 3 (historical first successful publish under that name).
+- Additional Clarity 4 core variant is deployed as:
+  - `dao-core-v2-c4-v4`
 
-## Generated Deployment Plans
+## Mainnet Plans Used
 
-- Simnet: `/Users/fabiomaulana/sad-StacksAIDAO/dao-factory/deployments/default.simnet-plan.yaml`
-- Testnet: `/Users/fabiomaulana/sad-StacksAIDAO/dao-factory/deployments/default.testnet-plan.yaml`
-- Mainnet: `/Users/fabiomaulana/sad-StacksAIDAO/dao-factory/deployments/default.mainnet-plan.yaml`
+- Base v2-c4 plan: `/Users/fabiomaulana/sad-StacksAIDAO/dao-factory/deployments/default.mainnet-v2-c4-plan.yaml`
+- Remaining 26 as Clarity 4: `/Users/fabiomaulana/sad-StacksAIDAO/dao-factory/deployments/default.mainnet-v2-c4-remaining-plan.yaml`
+- Final Clarity 4 core alias: `/Users/fabiomaulana/sad-StacksAIDAO/dao-factory/deployments/default.mainnet-dao-core-v2-c4-v4.yaml`
 
-## Validation Done
-
-- `clarinet check -m Clarinet.v2.toml -d`
-- Plan contract counts confirmed at 31 for simnet/testnet/mainnet.
-
-## Deploy Commands
+## Validation
 
 ```bash
 cd /Users/fabiomaulana/sad-StacksAIDAO/dao-factory
-clarinet check -m Clarinet.v2.toml -d
-clarinet deployments apply --testnet -d --no-dashboard -m Clarinet.v2.toml
-clarinet deployments apply --mainnet -d --no-dashboard -m Clarinet.v2.toml
+clarinet check -m Clarinet.v2-c4.toml -d
 ```
 
-## Notes
+## Mainnet Explorer
 
-- New contracts are deployment-ready drafts and intentionally minimal.
-- Clarinet `check_checker` warnings exist for unchecked inputs in draft modules; no hard errors remain.
-- Treat this as a governance expansion baseline and harden each module before production treasury usage.
+- https://explorer.hiro.so/address/SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK?chain=mainnet
