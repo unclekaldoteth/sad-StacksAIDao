@@ -20,6 +20,7 @@ export function ProposalCard({ proposal, daoAddress, contracts, onTransactionSuc
     const [loading, setLoading] = useState(false);
     const [showVoteModal, setShowVoteModal] = useState(false);
     const [voteRecommendation, setVoteRecommendation] = useState<VotingRecommendation | null>(null);
+    const [recommendationLoading, setRecommendationLoading] = useState(false);
     const [votingLoading, setVotingLoading] = useState(false);
     const [voteSubmitted, setVoteSubmitted] = useState(false);
     const [voteError, setVoteError] = useState<string | null>(null);
@@ -58,16 +59,21 @@ export function ProposalCard({ proposal, daoAddress, contracts, onTransactionSuc
         }
     };
 
-    const handleVoteClick = async () => {
+    const handleVoteClick = () => {
         setShowVoteModal(true);
-        setVotingLoading(true);
+        setRecommendationLoading(false);
         setVoteError(null);
         setVoteRecommendation(null);
         setVoteSubmitted(false);
         setTxId(null);
+        voteRequestIdRef.current += 1;
+    };
+
+    const handleGetRecommendation = async () => {
+        setVoteError(null);
+        setRecommendationLoading(true);
         const requestId = ++voteRequestIdRef.current;
         try {
-            // Get AI recommendation for this vote
             const recommendation = await api.getVotingRecommendation(daoAddress, {
                 id: Number(proposal.id),
                 title: proposal.title,
@@ -88,7 +94,7 @@ export function ProposalCard({ proposal, daoAddress, contracts, onTransactionSuc
             setVoteError('Failed to get AI recommendation. Please try again.');
         } finally {
             if (requestId === voteRequestIdRef.current) {
-                setVotingLoading(false);
+                setRecommendationLoading(false);
             }
         }
     };
@@ -151,6 +157,7 @@ export function ProposalCard({ proposal, daoAddress, contracts, onTransactionSuc
         setVoteSubmitted(false);
         setVoteError(null);
         setTxId(null);
+        setRecommendationLoading(false);
         voteRequestIdRef.current += 1; // invalidate any in-flight request
     };
 
@@ -245,12 +252,54 @@ export function ProposalCard({ proposal, daoAddress, contracts, onTransactionSuc
                         <h3>Vote on Proposal #{proposal.id}</h3>
                         <p className="modal-proposal-title">{proposal.title}</p>
 
-                        {votingLoading && (
+                        {recommendationLoading && (
                             <div className="vote-loading">
                                 <span className="loader"></span>
-                                <p>Working...</p>
+                                <p>Generating optional AI recommendation...</p>
                             </div>
                         )}
+
+                        {!voteSubmitted ? (
+                            <div className="vote-buttons">
+                                <button
+                                    className="btn btn-success btn-large"
+                                    onClick={() => handleVote('for')}
+                                    disabled={votingLoading}
+                                >
+                                    {votingLoading ? 'Submitting...' : '👍 Vote FOR'}
+                                </button>
+                                <button
+                                    className="btn btn-error btn-large"
+                                    onClick={() => handleVote('against')}
+                                    disabled={votingLoading}
+                                >
+                                    {votingLoading ? 'Submitting...' : '👎 Vote AGAINST'}
+                                </button>
+                                <button
+                                    className="btn btn-secondary btn-large"
+                                    onClick={() => handleVote('abstain')}
+                                    disabled={votingLoading}
+                                >
+                                    {votingLoading ? 'Submitting...' : '🤷 Abstain'}
+                                </button>
+                            </div>
+                        ) : null}
+
+                        {!voteSubmitted ? (
+                            <div className="vote-ai-actions">
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={handleGetRecommendation}
+                                    disabled={recommendationLoading || votingLoading}
+                                >
+                                    {recommendationLoading
+                                        ? 'Analyzing...'
+                                        : voteRecommendation
+                                            ? 'Refresh AI Recommendation'
+                                            : 'Get AI Recommendation (Optional)'}
+                                </button>
+                            </div>
+                        ) : null}
 
                         {voteRecommendation && !voteSubmitted && (
                             <div className="vote-recommendation fade-in">
@@ -264,38 +313,14 @@ export function ProposalCard({ proposal, daoAddress, contracts, onTransactionSuc
                                     </span>
                                 </div>
                                 <p className="recommendation-reasoning">{voteRecommendation.reasoning}</p>
-
-                                <div className="vote-buttons">
-                                    <button
-                                        className="btn btn-success btn-large"
-                                        onClick={() => handleVote('for')}
-                                        disabled={votingLoading}
-                                    >
-                                        👍 Vote FOR
-                                    </button>
-                                    <button
-                                        className="btn btn-error btn-large"
-                                        onClick={() => handleVote('against')}
-                                        disabled={votingLoading}
-                                    >
-                                        👎 Vote AGAINST
-                                    </button>
-                                    <button
-                                        className="btn btn-secondary btn-large"
-                                        onClick={() => handleVote('abstain')}
-                                        disabled={votingLoading}
-                                    >
-                                        🤷 Abstain
-                                    </button>
-                                </div>
                             </div>
                         )}
 
-                        {voteError && !votingLoading && !voteSubmitted && (
+                        {voteError && !recommendationLoading && !votingLoading && !voteSubmitted && (
                             <div className="vote-error fade-in">
                                 <p>{voteError}</p>
-                                <button className="btn btn-secondary" onClick={handleVoteClick}>
-                                    Retry
+                                <button className="btn btn-secondary" onClick={() => setVoteError(null)}>
+                                    Dismiss
                                 </button>
                             </div>
                         )}

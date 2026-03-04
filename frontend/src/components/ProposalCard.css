@@ -194,7 +194,6 @@
 .vote-buttons {
     display: flex;
     gap: 1rem;
-    margin-top: 0.5rem;
     flex-wrap: wrap;
 }
 
@@ -214,6 +213,15 @@
 
 .btn-large {
     font-weight: 600;
+}
+
+.vote-ai-actions {
+    margin-top: 0.85rem;
+    display: flex;
+}
+
+.vote-ai-actions .btn {
+    width: 100%;
 }
 
 .vote-error {

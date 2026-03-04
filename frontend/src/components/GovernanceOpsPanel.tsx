@@ -18,6 +18,17 @@ function splitContractId(contractId: string): { address: string; name: string } 
     return { address: parts[0], name: parts[1] };
 }
 
+function parseUintInput(label: string, raw: string): bigint {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+        throw new Error(`${label} is required.`);
+    }
+    if (!/^\d+$/.test(trimmed)) {
+        throw new Error(`${label} must be a non-negative integer.`);
+    }
+    return BigInt(trimmed);
+}
+
 export function GovernanceOpsPanel({
     contracts,
     operations,
@@ -83,6 +94,18 @@ export function GovernanceOpsPanel({
         }
     };
 
+    const runConfirmedAction = (
+        key: string,
+        confirmationMessage: string,
+        fn: () => Promise<{ txid?: string }>
+    ) => {
+        if (typeof window !== 'undefined') {
+            const accepted = window.confirm(confirmationMessage);
+            if (!accepted) return;
+        }
+        void runAction(key, fn);
+    };
+
     if (!contracts) {
         return (
             <section className="section ops-section">
@@ -140,21 +163,27 @@ export function GovernanceOpsPanel({
                                 className="btn btn-primary"
                                 disabled={loadingAction === 'queue'}
                                 onClick={() =>
-                                    runAction('queue', async () => {
-                                        const sender = await ensureWallet();
-                                        const { uintCV, contractPrincipalCV } = await import('@stacks/transactions');
-                                        const parsed = splitContractId(queueProposalContract.trim());
-                                        return callContract({
-                                            address: sender,
-                                            contract: contracts.proposalExecutor,
-                                            functionName: 'queue-proposal',
-                                            functionArgs: [
-                                                uintCV(BigInt(queueProposalId.trim() || '0')),
-                                                contractPrincipalCV(parsed.address, parsed.name),
-                                                uintCV(BigInt(queueReadyAt.trim() || '0')),
-                                            ],
-                                        });
-                                    })
+                                    runConfirmedAction(
+                                        'queue',
+                                        `Queue proposal #${queueProposalId.trim() || '?'} for execution at block ${queueReadyAt.trim() || '?'}?`,
+                                        async () => {
+                                            const sender = await ensureWallet();
+                                            const { uintCV, contractPrincipalCV } = await import('@stacks/transactions');
+                                            const proposalId = parseUintInput('Proposal ID', queueProposalId);
+                                            const readyAtBlock = parseUintInput('Ready At Block', queueReadyAt);
+                                            const parsed = splitContractId(queueProposalContract.trim());
+                                            return callContract({
+                                                address: sender,
+                                                contract: contracts.proposalExecutor,
+                                                functionName: 'queue-proposal',
+                                                functionArgs: [
+                                                    uintCV(proposalId),
+                                                    contractPrincipalCV(parsed.address, parsed.name),
+                                                    uintCV(readyAtBlock),
+                                                ],
+                                            });
+                                        }
+                                    )
                                 }
                             >
                                 Queue Proposal
@@ -184,21 +213,29 @@ export function GovernanceOpsPanel({
                                 className="btn btn-secondary"
                                 disabled={loadingAction === 'execute'}
                                 onClick={() =>
-                                    runAction('execute', async () => {
-                                        const sender = await ensureWallet();
-                                        const { uintCV, principalCV, contractPrincipalCV } = await import('@stacks/transactions');
-                                        const parsed = splitContractId(executeProposalContract.trim());
-                                        return callContract({
-                                            address: sender,
-                                            contract: contracts.proposalExecutor,
-                                            functionName: 'execute-queued',
-                                            functionArgs: [
-                                                uintCV(BigInt(executeProposalId.trim() || '0')),
-                                                contractPrincipalCV(parsed.address, parsed.name),
-                                                principalCV(effectiveSender),
-                                            ],
-                                        });
-                                    })
+                                    runConfirmedAction(
+                                        'execute',
+                                        `Execute queued proposal #${executeProposalId.trim() || '?'} using sender ${effectiveSender || '(missing)'}?`,
+                                        async () => {
+                                            const sender = await ensureWallet();
+                                            const { uintCV, principalCV, contractPrincipalCV } = await import('@stacks/transactions');
+                                            const proposalId = parseUintInput('Proposal ID', executeProposalId);
+                                            const parsed = splitContractId(executeProposalContract.trim());
+                                            if (!effectiveSender) {
+                                                throw new Error('Execution Sender Principal is required.');
+                                            }
+                                            return callContract({
+                                                address: sender,
+                                                contract: contracts.proposalExecutor,
+                                                functionName: 'execute-queued',
+                                                functionArgs: [
+                                                    uintCV(proposalId),
+                                                    contractPrincipalCV(parsed.address, parsed.name),
+                                                    principalCV(effectiveSender),
+                                                ],
+                                            });
+                                        }
+                                    )
                                 }
                             >
                                 Execute Queued
@@ -234,16 +271,21 @@ export function GovernanceOpsPanel({
                                 className="btn btn-secondary"
                                 disabled={loadingAction === 'timelock'}
                                 onClick={() =>
-                                    runAction('timelock', async () => {
-                                        const sender = await ensureWallet();
-                                        const { uintCV } = await import('@stacks/transactions');
-                                        return callContract({
-                                            address: sender,
-                                            contract: contracts.timelockController,
-                                            functionName: 'set-min-delay',
-                                            functionArgs: [uintCV(BigInt(timelockDelay.trim() || '0'))],
-                                        });
-                                    })
+                                    runConfirmedAction(
+                                        'timelock',
+                                        `Set timelock minimum delay to ${timelockDelay.trim() || '?'} blocks?`,
+                                        async () => {
+                                            const sender = await ensureWallet();
+                                            const { uintCV } = await import('@stacks/transactions');
+                                            const delay = parseUintInput('Timelock Delay', timelockDelay);
+                                            return callContract({
+                                                address: sender,
+                                                contract: contracts.timelockController,
+                                                functionName: 'set-min-delay',
+                                                functionArgs: [uintCV(delay)],
+                                            });
+                                        }
+                                    )
                                 }
                             >
                                 Set Timelock
@@ -261,16 +303,21 @@ export function GovernanceOpsPanel({
                                 className="btn btn-secondary"
                                 disabled={loadingAction === 'executor-delay'}
                                 onClick={() =>
-                                    runAction('executor-delay', async () => {
-                                        const sender = await ensureWallet();
-                                        const { uintCV } = await import('@stacks/transactions');
-                                        return callContract({
-                                            address: sender,
-                                            contract: contracts.proposalExecutor,
-                                            functionName: 'set-min-delay',
-                                            functionArgs: [uintCV(BigInt(executorDelay.trim() || '0'))],
-                                        });
-                                    })
+                                    runConfirmedAction(
+                                        'executor-delay',
+                                        `Set executor minimum delay to ${executorDelay.trim() || '?'} blocks?`,
+                                        async () => {
+                                            const sender = await ensureWallet();
+                                            const { uintCV } = await import('@stacks/transactions');
+                                            const delay = parseUintInput('Executor Delay', executorDelay);
+                                            return callContract({
+                                                address: sender,
+                                                contract: contracts.proposalExecutor,
+                                                functionName: 'set-min-delay',
+                                                functionArgs: [uintCV(delay)],
+                                            });
+                                        }
+                                    )
                                 }
                             >
                                 Set Executor Delay
@@ -290,16 +337,20 @@ export function GovernanceOpsPanel({
                                 className="btn btn-error"
                                 disabled={loadingAction === 'pause'}
                                 onClick={() =>
-                                    runAction('pause', async () => {
-                                        const sender = await ensureWallet();
-                                        const { boolCV } = await import('@stacks/transactions');
-                                        return callContract({
-                                            address: sender,
-                                            contract: contracts.emergencyGuardian,
-                                            functionName: 'set-global-paused',
-                                            functionArgs: [boolCV(globalPaused)],
-                                        });
-                                    })
+                                    runConfirmedAction(
+                                        'pause',
+                                        `Set Global Paused to ${globalPaused ? 'ON' : 'OFF'}?`,
+                                        async () => {
+                                            const sender = await ensureWallet();
+                                            const { boolCV } = await import('@stacks/transactions');
+                                            return callContract({
+                                                address: sender,
+                                                contract: contracts.emergencyGuardian,
+                                                functionName: 'set-global-paused',
+                                                functionArgs: [boolCV(globalPaused)],
+                                            });
+                                        }
+                                    )
                                 }
                             >
                                 Apply Pause State
@@ -315,20 +366,27 @@ export function GovernanceOpsPanel({
                                 className="btn btn-secondary"
                                 disabled={loadingAction === 'guardrails'}
                                 onClick={() =>
-                                    runAction('guardrails', async () => {
-                                        const sender = await ensureWallet();
-                                        const { uintCV } = await import('@stacks/transactions');
-                                        return callContract({
-                                            address: sender,
-                                            contract: contracts.treasuryGuardrails,
-                                            functionName: 'set-policy',
-                                            functionArgs: [
-                                                uintCV(BigInt(guardrailMaxBps.trim() || '0')),
-                                                uintCV(BigInt(guardrailBlocks.trim() || '0')),
-                                                uintCV(BigInt(guardrailPeriodLimit.trim() || '0')),
-                                            ],
-                                        });
-                                    })
+                                    runConfirmedAction(
+                                        'guardrails',
+                                        `Update treasury guardrails to max ${guardrailMaxBps.trim() || '?'} bps, ${guardrailBlocks.trim() || '?'} blocks, limit ${guardrailPeriodLimit.trim() || '?'} uSTX?`,
+                                        async () => {
+                                            const sender = await ensureWallet();
+                                            const { uintCV } = await import('@stacks/transactions');
+                                            const maxSpendBps = parseUintInput('Max Spend BPS', guardrailMaxBps);
+                                            const blocksPerPeriod = parseUintInput('Blocks Per Period', guardrailBlocks);
+                                            const periodLimit = parseUintInput('Period Limit', guardrailPeriodLimit);
+                                            return callContract({
+                                                address: sender,
+                                                contract: contracts.treasuryGuardrails,
+                                                functionName: 'set-policy',
+                                                functionArgs: [
+                                                    uintCV(maxSpendBps),
+                                                    uintCV(blocksPerPeriod),
+                                                    uintCV(periodLimit),
+                                                ],
+                                            });
+                                        }
+                                    )
                                 }
                             >
                                 Set Guardrails

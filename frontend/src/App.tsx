@@ -4,7 +4,6 @@ import { Header } from './components/Header';
 import { StatsCards } from './components/StatsCards';
 import { ProposalCard } from './components/ProposalCard';
 import { AIChat } from './components/AIChat';
-import { AIAgentCards } from './components/AIAgentCards';
 import { AlertsPanel } from './components/AlertsPanel';
 import { TreasuryPanel } from './components/TreasuryPanel';
 import { CreateProposalModal } from './components/CreateProposalModal';
@@ -37,6 +36,15 @@ function formatContractKey(key: string): string {
   return key.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
 }
 
+type UserView = 'overview' | 'proposals' | 'treasury' | 'operations';
+
+const USER_VIEWS: Array<{ id: UserView; label: string }> = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'proposals', label: 'Proposals' },
+  { id: 'treasury', label: 'Treasury' },
+  { id: 'operations', label: 'Operations' },
+];
+
 function App() {
   const { userAddress } = useWallet();
   const [health, setHealth] = useState<HealthStatus | null>(null);
@@ -53,6 +61,9 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showCreateProposal, setShowCreateProposal] = useState(false);
+  const [showContractDebug, setShowContractDebug] = useState(false);
+  const [showGovernanceOps, setShowGovernanceOps] = useState(false);
+  const [activeView, setActiveView] = useState<UserView>('overview');
   const loadRequestIdRef = useRef(0);
 
   const loadDao = (daoId: string | undefined, opts?: { keepExisting?: boolean }) => {
@@ -126,6 +137,32 @@ function App() {
       });
   };
 
+  const loadBootstrap = () => {
+    const requestId = ++loadRequestIdRef.current;
+    setLoading(true);
+    setLoadError(null);
+
+    return Promise.all([api.health(), api.daos(50).catch(() => null)])
+      .then(([healthRes, registryRes]) => {
+        if (requestId !== loadRequestIdRef.current) return;
+        setHealth(healthRes);
+        setDaoRegistry(registryRes);
+
+        const initialDaoId =
+          registryRes?.defaultDaoId ??
+          registryRes?.daos[registryRes.daos.length - 1]?.daoId;
+        setSelectedDaoId(initialDaoId);
+
+        return loadDao(initialDaoId, { keepExisting: true });
+      })
+      .catch((err) => {
+        if (requestId !== loadRequestIdRef.current) return;
+        console.error(err);
+        setLoadError(err instanceof Error ? err.message : String(err));
+        setLoading(false);
+      });
+  };
+
   useEffect(() => {
     const requestId = ++loadRequestIdRef.current;
     Promise.all([api.health(), api.daos(50).catch(() => null)])
@@ -182,21 +219,36 @@ function App() {
   }, [daoConfig?.contracts.core]);
 
   const daoAddress = daoConfig?.contracts.core ?? '';
+  const activeProposalCount = proposals.filter((proposal) => proposal.status === 'active').length;
+  const criticalAlertCount = (alerts?.alerts ?? []).filter((alert) => alert.level === 'critical').length;
+  const attentionItems: string[] = [];
+  if (activeProposalCount > 0) {
+    attentionItems.push(`${activeProposalCount} proposal${activeProposalCount === 1 ? '' : 's'} currently active for voting.`);
+  }
+  if (criticalAlertCount > 0) {
+    attentionItems.push(`${criticalAlertCount} critical risk alert${criticalAlertCount === 1 ? '' : 's'} detected.`);
+  }
+  if ((alerts?.riskScore ?? 0) >= 70) {
+    attentionItems.push(`Risk score is elevated at ${alerts?.riskScore ?? 0}/100.`);
+  }
+  if (typeof treasuryInsight?.healthScore === 'number' && treasuryInsight.healthScore <= 40) {
+    attentionItems.push(`Treasury health score is low (${treasuryInsight.healthScore}/100).`);
+  }
+  const isInitialLoading = loading && !overview && proposals.length === 0 && !treasury && !daoConfig;
 
-  if (loading) {
+  const retryLoad = () => {
+    if (!health && !daoRegistry) {
+      void loadBootstrap();
+      return;
+    }
+    void loadDao(selectedDaoId, { keepExisting: true });
+  };
+
+  if (isInitialLoading) {
     return (
       <div className="loading-screen">
         <div className="loader"></div>
         <p>Connecting to AI Agent...</p>
-      </div>
-    );
-  }
-
-  if (loadError) {
-    return (
-      <div className="loading-screen">
-        <p>Failed to load dashboard:</p>
-        <code style={{ maxWidth: 720, whiteSpace: 'pre-wrap', textAlign: 'left' }}>{loadError}</code>
       </div>
     );
   }
@@ -212,126 +264,266 @@ function App() {
         selectedDaoId={selectedDaoId}
         onDaoChange={(nextDaoId) => {
           setSelectedDaoId(nextDaoId);
-          void loadDao(nextDaoId);
+          void loadDao(nextDaoId, { keepExisting: true });
         }}
       />
 
       <main className="main container">
-        {daoConfig ? (
+        <section className="section section-nav">
+          <div className="view-tabs" role="tablist" aria-label="Main dashboard views">
+            {USER_VIEWS.map((view) => (
+              <button
+                key={view.id}
+                type="button"
+                role="tab"
+                aria-selected={activeView === view.id}
+                className={`view-tab-btn ${activeView === view.id ? 'active' : ''}`}
+                onClick={() => setActiveView(view.id)}
+              >
+                {view.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {loadError ? (
           <section className="section">
-            <div className="card contract-debug">
-              <div className="contract-debug-header">
-                <h3>On-Chain Contract Set</h3>
-                <span className="badge badge-success">
-                  {(contractSetLabel ?? 'Contracts') + ` • ${Object.keys(daoConfig.contracts).length}`}
-                </span>
-              </div>
-              <p className="contract-debug-copy">
-                Active contract IDs loaded from backend configuration for the selected DAO.
-              </p>
-              <div className="contract-debug-grid">
-                {(Object.entries(daoConfig.contracts) as Array<[string, string]>).map(([name, contractId]) => (
-                  <Fragment key={name}>
-                    <span>{formatContractKey(name)}</span>
-                    <code>{shortContractId(contractId)}</code>
-                  </Fragment>
-                ))}
-              </div>
+            <div className="card inline-error">
+              <p>{loadError}</p>
+              <button className="btn btn-secondary" onClick={retryLoad} disabled={loading}>
+                {loading ? 'Retrying...' : 'Retry Load'}
+              </button>
             </div>
           </section>
         ) : null}
 
-        <GovernanceOpsPanel
-          contracts={daoConfig?.contracts ?? null}
-          operations={operations}
-          onRefresh={() => {
-            void loadDao(selectedDaoId, { keepExisting: true });
-          }}
-        />
+        {activeView === 'overview' ? (
+          <>
+            <section className="section">
+              <div className="card action-center">
+                <div className="action-center-header">
+                  <h2>Needs Attention</h2>
+                  <span className={`badge ${attentionItems.length > 0 ? 'badge-warning' : 'badge-success'}`}>
+                    {attentionItems.length > 0 ? `${attentionItems.length} Signals` : 'All Clear'}
+                  </span>
+                </div>
+                {attentionItems.length > 0 ? (
+                  <ul className="attention-list">
+                    {attentionItems.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="attention-empty">No urgent governance or treasury issues detected right now.</p>
+                )}
+                {loading ? <p className="refresh-note">Refreshing live chain data...</p> : null}
+                <div className="action-center-actions">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      if (activeProposalCount > 0) {
+                        setActiveView('proposals');
+                        return;
+                      }
+                      setShowCreateProposal(true);
+                    }}
+                  >
+                    {activeProposalCount > 0
+                      ? `Vote on ${activeProposalCount} Active Proposal${activeProposalCount === 1 ? '' : 's'}`
+                      : 'Create New Proposal'}
+                  </button>
+                  <button className="btn btn-secondary" onClick={retryLoad} disabled={loading}>
+                    {loading ? 'Refreshing...' : 'Refresh Data'}
+                  </button>
+                </div>
+              </div>
+            </section>
 
-        {/* Dashboard Stats */}
-        <section className="section">
-          <h2>Dashboard</h2>
-          <StatsCards
-            treasuryBalanceStx={formatMicroStx(overview?.treasury.stxBalance ?? '0')}
-            proposalCount={Number(overview?.counts.proposals ?? 0)}
-            memberCount={Number(overview?.counts.members ?? 0)}
-            healthScore={treasuryInsight?.healthScore}
-            riskScore={alerts?.riskScore}
-            alertCount={alerts?.alerts.length}
-            userVotingPowerStx={
-              votingPower ? formatMicroStx(votingPower.votingPower) : null
-            }
-            userAddress={userAddress ? shortPrincipal(userAddress) : null}
-          />
-        </section>
+            <section className="section">
+              <h2>Dashboard</h2>
+              <StatsCards
+                treasuryBalanceStx={formatMicroStx(overview?.treasury.stxBalance ?? '0')}
+                proposalCount={Number(overview?.counts.proposals ?? 0)}
+                memberCount={Number(overview?.counts.members ?? 0)}
+                healthScore={treasuryInsight?.healthScore}
+                riskScore={alerts?.riskScore}
+                alertCount={alerts?.alerts.length}
+                userVotingPowerStx={
+                  votingPower ? formatMicroStx(votingPower.votingPower) : null
+                }
+                userAddress={userAddress ? shortPrincipal(userAddress) : null}
+              />
+            </section>
 
-        {/* AI Agent Layer - matches architecture diagram */}
-        <section className="section">
-          <h2>🤖 AI Agent Layer</h2>
-          <p className="section-subtitle">
-            Intelligent agents monitoring and assisting with DAO governance
-          </p>
-          <AIAgentCards />
-          <AlertsPanel
-            riskScore={alerts?.riskScore ?? 0}
-            alerts={alerts?.alerts ?? []}
-            generatedAt={alerts?.generatedAt}
-          />
-        </section>
+            <div className="dashboard-grid">
+              <section className="section">
+                <AlertsPanel
+                  riskScore={alerts?.riskScore ?? 0}
+                  alerts={alerts?.alerts ?? []}
+                  generatedAt={alerts?.generatedAt}
+                />
+              </section>
+              <section className="section">
+                <TreasuryPanel
+                  balanceMicroStx={treasury?.stats.stxBalance ?? '0'}
+                  totalReceivedMicroStx={treasury?.stats.totalReceived ?? '0'}
+                  totalSpentMicroStx={treasury?.stats.totalSpent ?? '0'}
+                  healthScore={treasuryInsight?.healthScore}
+                  recentSpends={treasury?.recentSpends ?? []}
+                  recommendations={treasuryInsight?.recommendations ?? []}
+                />
+              </section>
+            </div>
+          </>
+        ) : null}
 
-        {/* Main content grid */}
-        <div className="dashboard-grid three-column">
-          {/* Proposals Section - connected to Proposal Analyzer & Vote Recommender */}
-          <section className="section proposals-section">
+        {activeView === 'proposals' ? (
+          <div className="dashboard-grid">
+            <section className="section proposals-section">
+              <div className="section-header">
+                <h2>📜 Proposals</h2>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setShowCreateProposal(true)}
+                  disabled={!daoConfig}
+                  title={!daoConfig ? 'Loading DAO config...' : 'Create a new on-chain proposal'}
+                >
+                  New Proposal
+                </button>
+              </div>
+              <div className="proposals-list">
+                {loading && proposals.length === 0 ? (
+                  <div className="card section-loading">
+                    <div className="loader"></div>
+                    <p>Loading proposals...</p>
+                    <button className="btn btn-secondary" onClick={retryLoad} disabled={loading}>
+                      Retry
+                    </button>
+                  </div>
+                ) : null}
+
+                {proposals.map((proposal) => (
+                  <ProposalCard
+                    key={proposal.id}
+                    proposal={proposal}
+                    daoAddress={daoAddress}
+                    contracts={daoConfig?.contracts ?? null}
+                    onTransactionSuccess={refreshProposals}
+                  />
+                ))}
+
+                {!loading && proposals.length === 0 ? (
+                  <div className="card section-empty">
+                    <p>No proposals found yet.</p>
+                  </div>
+                ) : null}
+              </div>
+            </section>
+
+            <section className="section chat-section">
+              <AIChat daoAddress={daoAddress} />
+            </section>
+          </div>
+        ) : null}
+
+        {activeView === 'treasury' ? (
+          <div className="dashboard-grid">
+            <section className="section">
+              <h2>🏦 Treasury</h2>
+              {loading && !treasury ? (
+                <div className="card section-loading">
+                  <div className="loader"></div>
+                  <p>Loading treasury state...</p>
+                  <button className="btn btn-secondary" onClick={retryLoad} disabled={loading}>
+                    Retry
+                  </button>
+                </div>
+              ) : (
+                <TreasuryPanel
+                  balanceMicroStx={treasury?.stats.stxBalance ?? '0'}
+                  totalReceivedMicroStx={treasury?.stats.totalReceived ?? '0'}
+                  totalSpentMicroStx={treasury?.stats.totalSpent ?? '0'}
+                  healthScore={treasuryInsight?.healthScore}
+                  recentSpends={treasury?.recentSpends ?? []}
+                  recommendations={treasuryInsight?.recommendations ?? []}
+                />
+              )}
+              <AlertsPanel
+                riskScore={alerts?.riskScore ?? 0}
+                alerts={alerts?.alerts ?? []}
+                generatedAt={alerts?.generatedAt}
+              />
+            </section>
+
+            <section className="section chat-section">
+              <AIChat daoAddress={daoAddress} />
+            </section>
+          </div>
+        ) : null}
+
+        {activeView === 'operations' ? (
+          <section className="section section-advanced">
             <div className="section-header">
-              <h2>📜 Proposals</h2>
+              <h2>Advanced Tools</h2>
+              <span className="badge badge-warning">Operator Area</span>
+            </div>
+
+            <div className="card advanced-gate">
+              <h3>Governance Operations</h3>
+              <p>
+                Queue executions, change delays, emergency pause, and treasury guardrails are hidden by
+                default because they can change protocol behavior.
+              </p>
               <button
                 className="btn btn-secondary"
-                onClick={() => setShowCreateProposal(true)}
-                disabled={!daoConfig}
-                title={!daoConfig ? 'Loading DAO config...' : 'Create a new on-chain proposal'}
+                onClick={() => setShowGovernanceOps((v) => !v)}
               >
-                New Proposal
+                {showGovernanceOps ? 'Hide Governance Ops' : 'Reveal Governance Ops'}
               </button>
             </div>
-            <div className="proposals-list">
-              {proposals.map((proposal) => (
-                <ProposalCard
-                  key={proposal.id}
-                  proposal={proposal}
-                  daoAddress={daoAddress}
-                  contracts={daoConfig?.contracts ?? null}
-                  onTransactionSuccess={refreshProposals}
-                />
-              ))}
-              {proposals.length === 0 && (
-                <div className="card" style={{ padding: '1.25rem' }}>
-                  <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
-                    No proposals found yet.
-                  </p>
+
+            {showGovernanceOps ? (
+              <GovernanceOpsPanel
+                contracts={daoConfig?.contracts ?? null}
+                operations={operations}
+                onRefresh={() => {
+                  void loadDao(selectedDaoId, { keepExisting: true });
+                }}
+              />
+            ) : null}
+
+            {daoConfig ? (
+              <div className="card contract-debug">
+                <div className="contract-debug-header">
+                  <h3>On-Chain Contract Set</h3>
+                  <button
+                    className="btn btn-secondary contract-debug-toggle"
+                    onClick={() => setShowContractDebug((v) => !v)}
+                  >
+                    {showContractDebug ? 'Hide Contract IDs' : 'Show Contract IDs'}
+                  </button>
                 </div>
-              )}
-            </div>
+                <p className="contract-debug-copy">
+                  Active contract IDs loaded from backend configuration for the selected DAO.
+                </p>
+                {showContractDebug ? (
+                  <div className="contract-debug-grid">
+                    {(Object.entries(daoConfig.contracts) as Array<[string, string]>).map(([name, contractId]) => (
+                      <Fragment key={name}>
+                        <span>{formatContractKey(name)}</span>
+                        <code>{shortContractId(contractId)}</code>
+                      </Fragment>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="contract-debug-collapsed">
+                    {(contractSetLabel ?? 'Contracts') + ` • ${Object.keys(daoConfig.contracts).length} loaded`}
+                  </p>
+                )}
+              </div>
+            ) : null}
           </section>
-
-          {/* Treasury Section - connected to Treasury Advisor */}
-          <section className="section treasury-section">
-            <TreasuryPanel
-              balanceMicroStx={treasury?.stats.stxBalance ?? '0'}
-              totalReceivedMicroStx={treasury?.stats.totalReceived ?? '0'}
-              totalSpentMicroStx={treasury?.stats.totalSpent ?? '0'}
-              healthScore={treasuryInsight?.healthScore}
-              recentSpends={treasury?.recentSpends ?? []}
-              recommendations={treasuryInsight?.recommendations ?? []}
-            />
-          </section>
-
-          {/* Chat Section - connected to Risk Scanner for queries */}
-          <section className="section chat-section">
-            <AIChat daoAddress={daoAddress} />
-          </section>
-        </div>
+        ) : null}
       </main>
 
       <footer className="footer">
