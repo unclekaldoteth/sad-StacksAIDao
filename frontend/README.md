@@ -6,10 +6,10 @@ React + TypeScript frontend for the DAO AI Agent dashboard.
 
 The frontend reads live contract IDs from backend (`GET /api/dao/config`) and now surfaces them in the UI:
 
-- Header badge: `Contracts v2` (or `Contracts legacy` fallback)
+- Header badge: `Contracts v2-c4` (or legacy/custom fallback)
 - Dashboard card: `On-Chain Contract Set` with key IDs (Factory, Core, Voting, Treasury)
 
-If the UI does not show `Contracts v2`, verify backend environment and contract mapping first.
+If the UI does not show `Contracts v2-c4`, verify backend environment and contract mapping first.
 
 ## Quick Start
 

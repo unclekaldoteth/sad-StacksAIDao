@@ -1,6 +1,11 @@
 import { uintCV } from '@stacks/transactions';
 import { config } from '../config/index.js';
-import { buildDaoContracts, splitContractId, type DaoContracts } from '../stacks/dao-contracts.js';
+import {
+    buildDaoContracts,
+    buildDaoContractsFromCoreContractId,
+    splitContractId,
+    type DaoContracts,
+} from '../stacks/dao-contracts.js';
 import { expectPrincipalString, expectString, expectTuple, expectUintString, unwrapOptional } from '../stacks/clarity.js';
 import { callReadOnlyFunction } from '../stacks/read-only.js';
 
@@ -95,7 +100,7 @@ async function fetchDaoInfo(factoryContractId: string, daoId: bigint): Promise<D
     const info = expectTuple(tupleCv);
     const name = expectString(info.name);
     const coreContractId = expectPrincipalString(info['core-contract']);
-    const contractAddress = splitContractId(coreContractId).contractAddress;
+    const { contractAddress } = splitContractId(coreContractId);
     const registeredBy = expectPrincipalString(info.deployer);
     const deployedAtBlock = expectUintString(info['deployed-at']);
     const templateId = expectUintString(info['template-id']);
@@ -110,7 +115,7 @@ async function fetchDaoInfo(factoryContractId: string, daoId: bigint): Promise<D
         templateId,
         network: config.stacks.network,
         stacksApiUrl: config.stacks.apiUrl,
-        contracts: buildDaoContracts(contractAddress),
+        contracts: buildDaoContractsFromCoreContractId(coreContractId),
     };
 }
 
@@ -191,7 +196,7 @@ export function buildDaoContextFromCoreContract(coreContractId: string): DaoCont
         network: config.stacks.network,
         stacksApiUrl: config.stacks.apiUrl,
         deployerAddress: contractAddress,
-        contracts: buildDaoContracts(contractAddress),
+        contracts: buildDaoContractsFromCoreContractId(coreContractId),
         name: coreContractId,
     };
 }

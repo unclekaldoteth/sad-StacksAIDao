@@ -22,7 +22,7 @@ This repository contains three coordinated packages:
    - read-only on-chain DAO state (`GET /api/dao/*`)
    - heuristic risk scanning and alerts (`GET /api/dao/alerts`)
    - AI endpoints (`POST /api/analyze-proposal`, `POST /api/voting-recommendation`, `POST /api/analyze-treasury`, `POST /api/chat`) that pull live on-chain context before prompting the LLM.
-  - builds DAO contract IDs using the `-v2` contract set by default (legacy-compatible default)
+  - builds DAO contract IDs using the `-v2-c4` contract set by default
 3. `frontend` presents proposals and assistant interactions, consumes `/api/dao/*` and `/api/dao/alerts` for real on-chain state, and uses wallet transactions for proposal creation and voting.
 
 ## Architecture Diagram
@@ -45,15 +45,14 @@ flowchart TB
 
 - Network: `mainnet`
 - Deployer: `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK`
-- Legacy contract set: `-v2`
-- Legacy core contract IDs:
-  - `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.dao-core-v2`
-  - `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.proposal-submission-v2`
-  - `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.proposal-voting-v2`
-  - `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.governance-token-v2`
-  - `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.treasury-v2`
-  - `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.dao-factory-v2`
-- Expanded contract set: `-v2-c4` (31 contracts deployed)
+- Current contract set: `-v2-c4` (31 contracts deployed)
+- Core contract IDs used in current stack:
+  - `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.dao-core-v2-c4`
+  - `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.proposal-submission-v2-c4`
+  - `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.proposal-voting-v2-c4`
+  - `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.governance-token-v2-c4`
+  - `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.treasury-v2-c4`
+  - `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.dao-factory-v2-c4`
 - Core notes for `-v2-c4`:
   - `dao-core-v2-c4` exists on-chain as Clarity 3 (first successful publish under that immutable contract name)
   - Clarity 4 core variant is deployed as `dao-core-v2-c4-v4`
@@ -78,14 +77,14 @@ Backend runs on `http://localhost:3001` by default.
 
 #### Multi-DAO Mode (Registry)
 
-If you deploy multiple DAOs and register them in the `dao-factory-v2` contract, the backend can list/switch DAOs via the factory registry:
+If you deploy multiple DAOs and register them in the `dao-factory-v2-c4` contract, the backend can list/switch DAOs via the factory registry:
 
 - `GET /api/daos` lists registered DAOs
 - all `/api/dao/*` endpoints accept `?daoId=<number>` to target a specific DAO
 
 Configure in `backend/.env`:
 
-- `DAO_FACTORY_CONTRACT_ID` (optional, defaults to `${DAO_DEPLOYER_ADDRESS}.dao-factory-v2`)
+- `DAO_FACTORY_CONTRACT_ID` (optional, defaults to `${DAO_DEPLOYER_ADDRESS}.dao-factory-v2-c4`)
 - `DAO_DEFAULT_ID` (optional, selects the default DAO from the registry)
 
 ### 2) Frontend

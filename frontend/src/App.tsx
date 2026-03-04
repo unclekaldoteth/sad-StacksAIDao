@@ -172,7 +172,13 @@ function App() {
   const contractSetLabel = useMemo(() => {
     const core = daoConfig?.contracts.core ?? '';
     if (!core) return undefined;
-    return core.endsWith('.dao-core-v2') ? 'Contracts v2' : 'Contracts legacy';
+    if (core.endsWith('.dao-core-v2-c4') || core.endsWith('.dao-core-v2-c4-v4')) {
+      return 'Contracts v2-c4';
+    }
+    if (core.endsWith('.dao-core-v2')) {
+      return 'Contracts v2 (legacy)';
+    }
+    return 'Contracts custom';
   }, [daoConfig?.contracts.core]);
 
   const daoAddress = daoConfig?.contracts.core ?? '';

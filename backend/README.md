@@ -5,18 +5,18 @@ AI-powered governance agent for the DAO Factory.
 ## Current On-Chain Target (Mainnet)
 
 - Deployer: `SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK`
-- Contract set: `-v2`
+- Contract set: `-v2-c4`
 - Backend contract resolver (`buildDaoContracts`) now defaults to:
-  - `${DAO_DEPLOYER_ADDRESS}.dao-core-v2`
-  - `${DAO_DEPLOYER_ADDRESS}.proposal-submission-v2`
-  - `${DAO_DEPLOYER_ADDRESS}.proposal-voting-v2`
-  - `${DAO_DEPLOYER_ADDRESS}.governance-token-v2`
-  - `${DAO_DEPLOYER_ADDRESS}.membership-v2`
-  - `${DAO_DEPLOYER_ADDRESS}.extensions-registry-v2`
-  - `${DAO_DEPLOYER_ADDRESS}.treasury-v2`
-  - `${DAO_DEPLOYER_ADDRESS}.treasury-actions-v2`
-  - `${DAO_DEPLOYER_ADDRESS}.template-registry-v2`
-  - `${DAO_DEPLOYER_ADDRESS}.dao-factory-v2`
+  - `${DAO_DEPLOYER_ADDRESS}.dao-core-v2-c4`
+  - `${DAO_DEPLOYER_ADDRESS}.proposal-submission-v2-c4`
+  - `${DAO_DEPLOYER_ADDRESS}.proposal-voting-v2-c4`
+  - `${DAO_DEPLOYER_ADDRESS}.governance-token-v2-c4`
+  - `${DAO_DEPLOYER_ADDRESS}.membership-v2-c4`
+  - `${DAO_DEPLOYER_ADDRESS}.extensions-registry-v2-c4`
+  - `${DAO_DEPLOYER_ADDRESS}.treasury-v2-c4`
+  - `${DAO_DEPLOYER_ADDRESS}.treasury-actions-v2-c4`
+  - `${DAO_DEPLOYER_ADDRESS}.template-registry-v2-c4`
+  - `${DAO_DEPLOYER_ADDRESS}.dao-factory-v2-c4`
 
 ## Quick Start
 
@@ -58,10 +58,10 @@ Set these in `.env` for mainnet:
 STACKS_NETWORK=mainnet
 STACKS_API_URL=https://api.hiro.so
 DAO_DEPLOYER_ADDRESS=SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK
-DAO_FACTORY_CONTRACT_ID=SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.dao-factory-v2
+DAO_FACTORY_CONTRACT_ID=SP1MTYHV6K2FNH3QNF4P5QXS9VJ3XZ0GBB5T1SJPK.dao-factory-v2-c4
 ```
 
-If `DAO_FACTORY_CONTRACT_ID` is omitted, backend defaults to `${DAO_DEPLOYER_ADDRESS}.dao-factory-v2`.
+If `DAO_FACTORY_CONTRACT_ID` is omitted, backend defaults to `${DAO_DEPLOYER_ADDRESS}.dao-factory-v2-c4`.
 
 For Railway production deployment, use `../deploy/env/railway.backend.env.example` as the source-of-truth template.
 
